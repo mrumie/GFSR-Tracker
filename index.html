@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GFSR Tracker — IMF Global Financial Stability Report | MFO Investment Firm</title>
+<link href="https://fonts.googleapis.com/css2?family=Aller:ital,wght@0,300;0,700;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root {
+    --g: #7BC143; --g2: #B3D88C; --g4: #E1F1D3;
+    --c: #E07F5C; --cl: #EAA992; --cbg: #FDEEE9;
+    --sl: #5D7082; --sl-d: #34495E; --sl-bg: #EAF0F5; --sl-b: #C7D3DC;
+    --warn: #D9A441;
+    --gr3: #BEBEBE; --gr4: #E6E6E6; --cb: #EBEBEB;
+    --font: 'Aller', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Same baked-in 110% zoom as the WEO tracker (see WEO file for rationale). */
+  html { zoom: 1.1; overflow-y: scroll; scrollbar-gutter: stable; }
+  body { font-family: var(--font); font-weight: 300; color: #1B2127; background: #F5F5F5; padding: 2rem 1rem; }
+  a { color: inherit; text-decoration: none; }
+
+  .wrapper { max-width: 740px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 2rem 1.5rem 2.5rem; }
+  .w-inner { max-width: 700px; margin: 0 auto; padding: 1.5rem 1rem 2rem; }
+
+  /* HEADER */
+  .wh { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
+  .wh h2 { font-size: 20px; font-weight: 700; color: var(--g); letter-spacing: -0.01em; line-height: 1; }
+  .wh-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .wh-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #1A9FCC; text-transform: uppercase; line-height: 1; }
+  .wh-sub { font-size: 10px; font-weight: 300; color: #969696; line-height: 1.3; white-space: nowrap; }
+
+  /* TABS */
+  .mfo-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin: 0 0 1.25rem; padding-bottom: 1.1rem; align-items: center; }
+  .tb, .tbg {
+    padding: 6px 14px; border-radius: 4px; font-family: var(--font); font-weight: 300;
+    font-size: 12px; cursor: pointer; border: 1px solid var(--gr3); background: transparent; color: #000;
+    transition: all 0.15s;
+  }
+  .tb.active { background: var(--sl); color: #fff; border-color: var(--sl); font-weight: 700; }
+  .tbg { border-color: var(--g2); color: var(--sl); }
+  .tbg-first { margin-left: auto; }
+  .tbg.active { background: var(--g); border-color: var(--g); color: #fff; font-weight: 700; }
+  .tb:hover:not(.active), .tbg:hover:not(.active) { background: var(--gr4); }
+  .tb-stack { line-height: 1.2; padding-top: 4px; padding-bottom: 4px; }
+  .tb-stack span { display: block; }
+  .tb-stack .tb-sub { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; opacity: 0.6; margin-top: -1px; }
+
+  /* PANELS */
+  .mp { display: none; }
+  .mp.active { display: block; }
+  .sec { background: #fff; border: 1px solid #E6E6E6; border-radius: 6px; padding: 13px 15px; margin-bottom: 16px; }
+  .sec > .st:first-child { margin-top: 0; }
+
+  /* EXECUTIVE SUMMARY (norma 7.5 .exec) */
+  .exec { background: var(--sl-bg); border: 1px solid var(--sl-b); border-radius: 8px; padding: 12px 15px; margin-bottom: 16px; }
+  .exec-t { font-size: 10px; font-weight: 700; color: var(--sl-d); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .exec-t .exec-date { font-weight: 300; text-transform: none; letter-spacing: 0; color: #969696; font-size: 10px; }
+  .exec-h { font-size: 14px; font-weight: 700; color: var(--sl-d); margin-bottom: 5px; line-height: 1.3; }
+  .exec-b { font-size: 12.5px; color: #333; line-height: 1.55; }
+  .exec-b b { font-weight: 700; }
+
+  /* RISK METRICS TABLE (equivalente GFSR del bloque de forecasts del WEO) */
+  .fc-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; align-items: start; }
+  .fc-split .fc-table { margin-bottom: 0; margin-left: 0; margin-right: auto; }
+  .rk-table { border-collapse: collapse; width: 100%; table-layout: fixed; font-family: var(--font); }
+  .rk-table col.c-m { width: 44%; }
+  .rk-table col.c-v { width: 21%; }
+  .rk-table col.c-r { width: 35%; }
+  .rk-table thead .fc-group th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #111; padding: 0 2px 4px; text-align: left; }
+  .rk-table thead .fc-sub th { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1.5px solid #d5d5d5; padding: 0 3px 6px; text-align: center; }
+  .rk-table thead .fc-sub th:first-child { text-align: left; padding-left: 2px; }
+  .rk-table td { padding: 5px 3px; font-size: 12px; text-align: center; vertical-align: middle; }
+  .rk-table tbody tr { border-bottom: 1px solid #eee; }
+  .rk-table tbody tr:last-child { border-bottom: none; }
+  .rk-table td.rk-m { text-align: left; font-weight: 700; color: #111; padding-left: 2px; line-height: 1.25; font-size: 11.5px; }
+  .rk-table td.rk-v { font-weight: 700; color: #111; font-size: 13px; white-space: nowrap; border-left: 1px solid #e8e8e8; }
+  .rk-table td.rk-r { font-size: 10.5px; color: #777; line-height: 1.3; text-align: left; padding-left: 8px; }
+  .rk-table .arr { font-size: 9px; margin-right: 2px; }
+  .arr.up { color: var(--c); } .arr.dn { color: var(--g); } .arr.fl { color: #bbb; }
+  .rk-note { font-size: 10px; font-style: italic; color: #969696; margin-top: 10px; line-height: 1.45; }
+
+  .gar-table { width:100%; border-collapse:collapse; table-layout:fixed; font-family:var(--font); }
+  .gar-table th { font-size:10px; font-weight:700; color:#999; text-transform:uppercase; letter-spacing:.05em; border-bottom:1.5px solid #d5d5d5; padding:0 4px 6px; text-align:center; }
+  .gar-table th:first-child { text-align:left; padding-left:2px; }
+  .gar-table td { padding:6px 4px; font-size:13px; text-align:center; border-bottom:1px solid #eee; }
+  .gar-table tr:last-child td { border-bottom:none; }
+  .gar-table td.sc { text-align:left; font-weight:700; color:#111; padding-left:2px; }
+  .gar-table td.sc span { display:block; font-weight:300; font-size:10.5px; color:#777; line-height:1.3; margin-top:1px; }
+  .gar-table td.gv { font-weight:700; font-size:15px; color:#111; border-left:1px solid #e8e8e8; }
+  .gar-table td.d { font-size:11px; white-space:nowrap; }
+  .gar-table td.d.up { color:var(--g); } .gar-table td.d.down { color:var(--c); } .gar-table td.d.flat { color:#bbb; }
+  .gar-table td.pc { font-size:12px; color:#444; }
+  .fc-group-t { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#111; margin-bottom:6px; }
+
+  /* GaR table — identical to WEO .fc-table */
+  .fc-table { border-collapse: collapse; margin-bottom: 20px; font-family: 'Aller', sans-serif; table-layout: fixed; width: 100%; }
+  .fc-table col.c-region { width: 31%; }
+  .fc-table col.c-y26 { width: 15%; }
+  .fc-table col.c-d26 { width: 18%; }
+  .fc-table col.c-y27 { width: 16%; }
+  .fc-table col.c-d27 { width: 20%; }
+  .fc-table th, .fc-table td { text-align: center; padding: 5px 3px; font-size: 13px; }
+  .fc-table thead .fc-group th { padding-left: 2px; }
+  .fc-table thead .fc-group { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #111; padding-bottom: 4px; text-align: left; }
+  .fc-table thead .fc-sub th { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1.5px solid #d5d5d5; padding-bottom: 6px; }
+  .fc-table td.fc-region { text-align: left; font-size: 13px; font-weight: 700; color: #111; white-space: nowrap; padding-left: 2px; padding-right: 8px; }
+  .fc-table tbody tr { border-bottom: 1px solid #eee; }
+  .fc-table tbody tr:last-child { border-bottom: none; }
+  .fc-table td.fc-y26 { font-weight: 700; color: #111; }
+  .fc-table td.fc-y27 { font-weight: 300; color: #666; }
+  .fc-table td.fc-delta { font-size: 11px; white-space: nowrap; }
+  .fc-table td.fc-delta.up { color: #7BC143; }
+  .fc-table td.fc-delta.down { color: #E07F5C; }
+  .fc-table td.fc-delta.flat { color: #bbb; }
+  .fc-table .fc-sep-year { border-left: 1px solid #e8e8e8; }
+  .fc-table .fc-sep-region { border-left: 1px solid #e8e8e8; }
+
+  .fc-table.gar th, .fc-table.gar td { white-space: nowrap; }
+  .fc-table.gar col.c-region { width: 26%; }
+  .fc-table.gar col.c-y26 { width: 18%; }
+  .fc-table.gar col.c-d26 { width: 21%; }
+  .fc-table.gar col.c-y27 { width: 17%; }
+  .fc-table.gar col.c-d27 { width: 18%; }
+  .fc-table.gar td.fc-delta { padding-right: 8px; }
+  .fc-table.gar td { height: 29px; }
+
+  .xs-list { list-style:none; }
+  .xs-item { display:flex; gap:8px; align-items:flex-start; padding:6px 0; font-size:13px; color:#333; line-height:1.5; border-bottom:0.5px solid #eee; }
+  .xs-item:last-child { border-bottom:none; }
+  .xs-item b { font-weight:700; color:#111; }
+  .xs-dot { font-size:10px; color:var(--sl); margin-top:3px; flex-shrink:0; }
+  .rep-link { display:inline-block; font-size:12px; color:var(--sl); border:1px solid var(--gr3); border-radius:6px; padding:6px 14px; margin-top:2px; }
+  .rep-link:hover { background:var(--gr4); }
+
+  .exec .exec-t { margin-bottom: 8px; }
+  .exec .xs-item { border-bottom: none; padding: 4px 0; font-size: 12.5px; }
+  .exec .xs-dot { color: #1B2127; }
+
+  .cgroup { display:none; }
+  .cgroup.active { display:block; }
+  #ctabs { margin-bottom: 14px; }
+
+  /* CHIPS (norma 7.4) */
+  .vc { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 3px; border: 1px solid; line-height: 1.2; white-space: nowrap; }
+  .vd { background: var(--g4); border-color: var(--g2); color: #1F5209; }
+  .vf { background: var(--gr4); border-color: var(--gr3); color: #555; }
+  .vh { background: var(--cbg); border-color: var(--cl); color: var(--c); }
+
+  /* SECTION TITLES */
+  .st { font-size: 10px; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #E6E6E6; }
+
+  /* TONE BLOCK */
+  .tone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tone-box { background: var(--cb); border-radius: 6px; padding: 14px 16px; }
+  .tone-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .tone-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .needle-track { display: flex; align-items: center; gap: 8px; }
+  .needle-label { font-size: 11px; color: #888; }
+  .needle-bar { flex: 1; height: 6px; background: var(--gr4); border-radius: 3px; position: relative; }
+  .needle-dot { position: absolute; top: -4px; width: 14px; height: 14px; background: var(--c); border-radius: 50%; transform: translateX(-50%); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .tone-body { font-size: 13px; color: #444; line-height: 1.55; }
+
+  /* KEY VARIABLES */
+  .kv-table { width: 100%; border-collapse: collapse; background: var(--cb); border-radius: 6px; overflow: hidden; }
+  .kv-table tr { border-bottom: 1px solid #ddd; }
+  .kv-table tr:last-child { border-bottom: none; }
+  .kv-table td { padding: 10px 12px; vertical-align: top; }
+  .kv-cat { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.07em; display: block; margin-bottom: 2px; }
+  .kv-name { font-size: 13px; font-weight: 700; color: #111; }
+  .kv-desc { font-size: 13px; color: #444; line-height: 1.5; }
+  .kv-desc b { font-weight: 700; }
+
+  /* RISK BALANCE */
+  .risk-list { list-style: none; }
+  .risk-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 13px; color: #333; border-bottom: 0.5px solid #eee; line-height: 1.45; }
+  .risk-item:last-child { border-bottom: none; }
+  .tri { font-size: 10px; margin-top: 3px; flex-shrink: 0; }
+  .tri.hi { color: var(--c); } .tri.md { color: var(--cl); } .tri.lo { color: var(--g); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+  .lg { font-size: 10px; color: #777; display: flex; align-items: center; gap: 6px; }
+  .lg .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* SEGMENT TABS */
+  .region-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .rtab { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-family: var(--font); font-weight: 300; cursor: pointer; border: 1px solid var(--gr3); background: #fff; color: #555; }
+  .rtab.active { background: var(--g); color: #fff; border-color: var(--g); font-weight: 700; }
+
+  /* QUOTE (norma .qb / .qa) */
+  .quote-box { background: var(--gr4); border-left: 3px solid var(--gr3); border-radius: 0 6px 6px 0; padding: 14px 16px; font-size: 13px; color: #333; line-height: 1.6; }
+  .quote-box em { font-style: italic; }
+  .quote-ctx { font-style: normal; display: block; margin-top: 8px; color: #555; font-size: 12.5px; }
+  .quote-source { font-style: italic; font-size: 11px; color: #969696; margin-top: 8px; display: block; }
+
+  /* IMPLICATIONS */
+  .impl-list { display: flex; flex-direction: column; gap: 8px; }
+  .impl { padding: 10px 14px; border-left: 3px solid var(--c); border-radius: 0 4px 4px 0; background: var(--cb); }
+  .impl.md { border-color: var(--cl); }
+  .impl.lo { border-color: var(--g); }
+  .impl-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+  .impl-body { font-size: 12px; color: #555; line-height: 1.5; }
+
+  /* CHARTS TAB */
+  .ch-intro { font-size: 12.5px; color: #444; line-height: 1.55; margin-bottom: 12px; }
+  .flow { display: flex; align-items: stretch; gap: 0; margin-bottom: 18px; flex-wrap: wrap; }
+  .flow-step { flex: 1; min-width: 92px; background: var(--cb); padding: 8px 8px 7px; text-align: center; position: relative; cursor: pointer; border: 1px solid transparent; transition: border-color .15s; }
+  .flow-step:first-child { border-radius: 6px 0 0 6px; }
+  .flow-step:last-child { border-radius: 0 6px 6px 0; }
+  .flow-step + .flow-step { border-left: 1px solid #fff; }
+  .flow-step:hover { border-color: var(--g2); }
+  .flow-n { font-size: 9px; font-weight: 700; color: var(--sl); display: block; margin-bottom: 2px; }
+  .flow-l { font-size: 11px; font-weight: 700; color: #111; line-height: 1.2; display: block; }
+  .flow-s { font-size: 9.5px; color: #888; display: block; margin-top: 2px; line-height: 1.2; }
+  .flow-arrow { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); color: var(--gr3); font-size: 10px; z-index: 2; }
+  .part-h { display:flex; justify-content:space-between; align-items:baseline; gap:10px; border-bottom:2px solid var(--sl); padding-bottom:6px; margin:6px 0 12px; scroll-margin-top:12px; }
+  #part-theme { margin-top: 30px; }
+  .part-t { font-size:13px; font-weight:700; color:var(--sl-d); text-transform:uppercase; letter-spacing:.07em; }
+  .part-s { font-size:10.5px; color:#969696; }
+  .blk { margin-bottom: 22px; scroll-margin-top: 12px; }
+  .blk-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .blk-n { font-size: 20px; font-weight: 700; color: var(--g); line-height: 1; }
+  .blk-t { font-size: 13px; font-weight: 700; color: #111; }
+  .blk-d { font-size: 12px; color: #666; line-height: 1.5; margin: 0 0 10px; }
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .chart-box { background: #fff; border: 1px solid var(--gr4); border-radius: 8px; padding: 10px 14px 10px; display: flex; flex-direction: column; }
+  .chart-box.wide { grid-column: 1 / -1; }
+  .chart-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+  .chart-title { font-size: 11px; font-weight: 700; color: #333; text-transform: uppercase; letter-spacing: 0.06em; line-height: 1.3; }
+  .chart-unit { font-size: 10px; color: #999; margin-bottom: 6px; }
+  .tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px; white-space: nowrap; border: 1px solid; }
+  .tag.a26 { background: var(--sl); border-color: var(--sl); color: #fff; }
+  .tag.o25 { background: #fff; border-color: var(--sl); color: var(--sl); }
+  .cv { position: relative; height: 190px; }
+  .cv canvas { width: 100% !important; height: 100% !important; display: block; }
+  .ctake { font-size: 11.5px; color: #333; line-height: 1.45; margin-top: 8px; padding-top: 7px; border-top: 1px solid #f0f0f0; }
+  .ctake b { font-weight: 700; }
+  .cnote { font-size: 10px; font-style: italic; color: #aaa; margin-top: 4px; }
+  .mc-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mc { background: var(--cb); border: 1px solid #d4d4d4; border-radius: 6px; padding: 10px; }
+  .mc-l { font-size: 9.5px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; line-height: 1.3; }
+  .mc-v { font-size: 17px; font-weight: 700; color: #111; }
+  .mc-s { font-size: 11px; color: #777; margin-top: 2px; line-height: 1.35; }
+  .data-note { font-size: 10px; font-style: italic; color: #969696; line-height: 1.5; border-top: 1px solid #eee; padding-top: 10px; }
+
+  .evo-toggle { font-family: var(--font); font-size: 10px; font-weight: 700; padding: 2px 9px; border: 1px solid var(--cb); border-radius: 4px; background: #fff; color: var(--sl); cursor: pointer; margin-left: 4px; }
+  .evo-toggle:hover { border-color: var(--g); }
+  .evo-toggle.active { background: var(--sl); color: #fff; border-color: var(--sl); }
+
+  /* MANUAL BUTTON + MODAL */
+  .manual-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+  .manual-btn { font-family: var(--font); font-weight: 300; font-size: 12px; padding: 6px 14px; border: 1px solid var(--gr3); border-radius: 6px; background: #fff; color: #555; cursor: pointer; transition: all 0.15s; }
+  .manual-btn:hover { background: var(--gr4); }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1000; }
+  .modal-overlay.open { display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-card { background: #fff; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.18); max-width: 560px; width: 100%; padding: 22px 26px 24px; position: relative; }
+  .modal-close { position: absolute; top: 15px; right: 17px; cursor: pointer; color: #b0b0b0; background: none; border: none; font-size: 22px; line-height: 1; padding: 0; }
+  .modal-close:hover { color: #555; }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--g); margin-bottom: 3px; }
+  .modal-sub { font-size: 12px; font-weight: 300; color: #969696; margin-bottom: 18px; }
+  .modal-steps { list-style: none; margin: 0; padding: 0; }
+  .modal-step { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 13px; color: #444; line-height: 1.5; margin-bottom: 14px; }
+  .modal-step:last-of-type { margin-bottom: 4px; }
+  .modal-step .num { font-weight: 700; color: #111; }
+  .modal-step b { font-weight: 700; color: #111; }
+  .modal-step .hl { font-weight: 700; color: var(--g); }
+  .modal-divider { border: none; border-top: 1px solid #e6e6e6; margin: 14px 0; }
+  .modal-note { font-size: 12px; font-style: italic; color: #969696; line-height: 1.5; }
+
+  button:focus-visible, .flow-step:focus-visible { outline: 2px solid var(--sl); outline-offset: 2px; }
+
+  @media (max-width: 600px) {
+    .fc-split, .tone-grid, .chart-grid { grid-template-columns: 1fr; }
+    .mc-row { grid-template-columns: 1fr 1fr; }
+    .flow-step { min-width: 30%; }
+    .flow-arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+<div class="w-inner">
+
+  <div class="wh">
+    <h2>GFSR Tracker</h2>
+    <div class="wh-meta">
+      <span class="wh-tag">Información Pública</span>
+      <span class="wh-sub">Periodicidad: semestral</span>
+      <span class="wh-sub">Última actualización: 14 Abr 2026</span>
+      <span class="wh-sub">Fuente: www.imf.org</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="mfo-tabs">
+    <button class="tb active" onclick="showPanel('apr26', this)">Apr '26</button>
+    <button class="tb" onclick="showPanel('oct25', this)">Oct '25</button>
+    <button class="tbg tbg-first" onclick="showPanel('charts', this)">Charts</button>
+    <button class="tbg" onclick="showPanel('garhist', this)">GaR History</button>
+  </div>
+
+  <div class="mp active" id="panel-apr26">
+
+    <div class="exec">
+    <div class="exec-t">Executive Summary</div>
+    <ul class="xs-list">
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Stability risks are elevated:</b> the war in the Middle East, renewed inflation pressures and the risk of further tightening come on top of channels that could turn market turmoil into instability. Since February, global equities have fallen 8% and bond yields have risen sharply.</span></li>
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Sovereign bonds are more fragile:</b> record debt, shorter issuance maturities and a more price-sensitive investor base raise rollover risk. On auction days the US 10-year yield now moves 11 bp at the 90th percentile, versus 6 bp in 2020–22.</span></li>
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Leveraged nonbanks could amplify a sell-off:</b> hedge funds' gross fixed-income exposure exceeds $18 trillion (under $9 trillion in 2020), and equity options trade at near cash-market scale, with 0DTE options around 60% of S&amp;P 500 options volume.</span></li>
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Emerging markets are most exposed:</b> capital flows are K-shaped and skewed toward carry-driven debt rather than FDI or equity, and nonresident nonbank investors are more sensitive to global risk than residents.</span></li>
+    </ul>
+    </div>
+
+    <div class="sec">
+    <div class="st">Key Change (vs. GFSR October 2025)</div>
+    <ul class="xs-list">
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>From complacent calm to a war shock:</b> financial conditions have tightened since October 2025, by less than in past global shocks, and remain accommodative by historical standards. The baseline Growth-at-Risk for 2026 improves to 0,75% from 0,5%.</span></li>
+    </ul>
+    </div>
+
+    <div class="sec">
+    <div class="st">Risk Balance</div>
+    <ul class="risk-list">
+      <li class="risk-item"><span class="tri hi">▶</span> Prolonged war: conditions tighten about 1,1 SD and Growth-at-Risk falls to –0,5% in the downside scenario.</li>
+      <li class="risk-item"><span class="tri hi">▶</span> Forced selling by hedge funds, option sellers and leveraged ETFs amplifies volatility in bonds and equities.</li>
+      <li class="risk-item"><span class="tri md">▶</span> Private credit defaults spread into broader corporate credit; a slowdown in AI investment hits circularly financed firms.</li>
+      <li class="risk-item"><span class="tri lo">▶</span> De-escalation and normalizing energy prices would lift Growth-at-Risk to 2,6% in the upside scenario.</li>
+    </ul>
+    </div>
+
+    <div class="sec">
+    <div class="st">Key Quote</div>
+    <div class="quote-box">
+      <em>"The contained market impact of geopolitical shocks do not imply that vulnerabilities are benign. Rather, it may indicate that markets have not fully priced more adverse scenarios."</em>
+      <span class="quote-source">— Tobias Adrian, IMF Financial Counsellor · Foreword, GFSR April 2026</span>
+    </div>
+    </div>
+
+    <a class="rep-link" href="https://www.imf.org/en/publications/gfsr/issues/2026/04/14/global-financial-stability-report-april-2026" target="_blank" rel="noopener">📄 View full GFSR (IMF, April 2026)</a>
+
+  </div>
+
+  <div class="mp" id="panel-oct25">
+
+    <div class="exec">
+    <div class="exec-t">Executive Summary</div>
+    <ul class="xs-list">
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Calm surface, shifting ground:</b> risk asset valuations look stretched. The S&amp;P 500 forward P/E is near its 96th historical percentile versus a model-implied fair value around the 81st, and the Magnificent 7 account for 33% of the index.</span></li>
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Debt keeps shifting to governments:</b> widening deficits push sovereign issuance onto price-sensitive investors, steepening curves. In a stress scenario, forced Treasury sales by bond funds could reach almost $300 billion.</span></li>
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Banks and nonbanks are more intertwined:</b> in the IMF's Global Stress Test, 18% of bank assets fall below CET1 thresholds in the adverse scenario, rising to 21% when NBFI shocks are added.</span></li>
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>New fault lines in FX and stablecoins:</b> the dollar fell about 10% in 2025, foreign exchange markets show structural fragilities, and dollar-pegged stablecoins are growing rapidly.</span></li>
+    </ul>
+    </div>
+
+    <div class="sec">
+    <div class="st">Key Change (vs. GFSR April 2025)</div>
+    <ul class="xs-list">
+      <li class="xs-item"><span class="xs-dot">▶</span><span><b>Conditions eased after the tariff shock:</b> asset prices rebounded to records and financial conditions returned to accommodative levels, but Growth-at-Risk improved only 0,1pp, to 0,5%, and risks remain elevated.</span></li>
+    </ul>
+    </div>
+
+    <div class="sec">
+    <div class="st">Risk Balance</div>
+    <ul class="risk-list">
+      <li class="risk-item"><span class="tri hi">▶</span> Disorderly correction of stretched, concentrated valuations, especially in AI-related stocks.</li>
+      <li class="risk-item"><span class="tri hi">▶</span> Abrupt rise in sovereign yields on fiscal concerns, straining bank balance sheets and open-ended funds.</li>
+      <li class="risk-item"><span class="tri md">▶</span> Growing bank–NBFI interconnection amplifies shocks in both directions.</li>
+      <li class="risk-item"><span class="tri md">▶</span> Stablecoin runs force sales of reserve assets; currency substitution in weaker economies.</li>
+    </ul>
+    </div>
+
+    <div class="sec">
+    <div class="st">Key Quote</div>
+    <div class="quote-box">
+      <em>"The ground is shifting beneath this seemingly tranquil surface."</em>
+      <span class="quote-source">— Tobias Adrian, IMF Financial Counsellor · Foreword, GFSR October 2025</span>
+    </div>
+    </div>
+
+    <a class="rep-link" href="https://www.imf.org/en/publications/gfsr" target="_blank" rel="noopener">📄 View full GFSR (IMF, October 2025)</a>
+
+  </div>
+
+  <!-- ==================== CHARTS ==================== -->
+  <div class="mp" id="panel-charts">
+    <div class="region-tabs" id="ctabs">
+      <button class="rtab active" onclick="showChartGroup('fc', this)">Financial Conditions</button>
+      <button class="rtab" onclick="showChartGroup('ac', this)">Asset Classes</button>
+    </div>
+    <div class="cgroup active" id="cgroup-fc">
+      <div class="chart-grid">
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">Global growth distribution, 2026</div></div>
+          <div class="chart-unit">Probability density of one-year-ahead real GDP growth (%)</div>
+          <div class="cv" style="height:260px"><canvas id="c-dens"></canvas></div>
+          <div class="ctake">5th-percentile growth: <b>0,75%</b> in the baseline, <b>2,6%</b> if the war de-escalates, <b>–0,5%</b> if it drags on — a 1,2pp swing driven by the left tail, not the mode.</div>
+          <div class="cnote">Fig. 1.2.1, panel 2 · dots mark each scenario's 5th percentile.</div>
+        </div>
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">Global Financial Conditions Index</div></div>
+          <div class="chart-unit">Z-score vs long-term avg. (positive = tighter)</div>
+          <div class="cv" style="height:260px"><canvas id="c-fci"></canvas></div>
+          <div class="ctake">Conditions were <b>accommodative</b> going into the war. The downside scenario tightens them by about <b>1,1 SD</b>; the upside eases them by about one SD.</div>
+          <div class="cnote">Fig. 1.2.1, panel 1 · markers = 2026 scenarios.</div>
+        </div>
+      </div>
+    </div>
+    <div class="cgroup" id="cgroup-ac">
+      <div class="chart-grid">
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">10-year yield moves on bond auction days</div></div>
+          <div class="chart-unit">Daily change, 90th percentile (bp) · <span class="seg-toggle"><button id="auc-30" class="evo-toggle active" onclick="setAuction('30')">30Y auctions</button><button id="auc-10" class="evo-toggle" onclick="setAuction('10')">10Y auctions</button></span></div>
+          <div class="cv" style="height:260px"><canvas id="c-auction"></canvas></div>
+          <div class="ctake">At the 90th percentile, the US 10-year yield now moves <b>11 bp</b> on auction days, vs 6 bp in 2020–22, while bid-to-cover is unchanged at ~2,5: investors demand more yield for the same supply.</div>
+          <div class="cnote">Fig. 1.2, panel 1.</div>
+        </div>
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">Global equity prices</div></div>
+          <div class="chart-unit">Index, 14 Oct 2025 = 100 · dashed = start of war</div>
+          <div class="cv" style="height:260px"><canvas id="c-eq"></canvas></div>
+          <div class="ctake">Global equities have fallen <b>8% since February</b>, interrupting a rally led by Japan, EM and Asia; stock prices fell most in EM energy importers.</div>
+          <div class="cnote">Fig. 1.1, panel 1 · daily data through early April 2026.</div>
+        </div>
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">Hedge fund borrowing by strategy</div></div>
+          <div class="chart-unit">Prime brokerage + repo, trillions of dollars (stacked)</div>
+          <div class="cv" style="height:260px"><canvas id="c-borrow"></canvas></div>
+          <div class="ctake"><b>Multistrategy, relative-value and macro</b> funds have increased prime brokerage and repo borrowing sharply.</div>
+          <div class="cnote">Fig. 1.9, panel 3 · OFR Form PF.</div>
+        </div>
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">EM currencies: what drove the rally, and the reversal</div></div>
+          <div class="chart-unit">FX change vs USD, pp · bars = decomposition 2025:Q1 to conflict · ○ total before · — since conflict</div>
+          <div class="cv" style="height:260px"><canvas id="c-fx"></canvas></div>
+          <div class="ctake">The 2025 rally in EM currencies was shaped mainly by the <b>dollar factor</b> rather than fundamentals; since the war, earlier outperformers have seen the <b>largest sell-offs</b>.</div>
+          <div class="cnote">Fig. 1.6, panel 4.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== GAR HISTORY ==================== -->
+  <div class="mp" id="panel-garhist">
+    <div class="chart-grid">
+      <div class="chart-box wide">
+        <div class="chart-top"><div class="chart-title">Growth-at-Risk Forecasts</div></div>
+        <div class="chart-unit">Global growth with a 5% probability of being undershot, one year ahead (%)</div>
+        <div class="cv" style="height:260px"><canvas id="c-garhist"></canvas></div>
+        <div class="ctake">Each pair of editions assesses the <b>same target year</b>: October gives the first reading, April revises it. Risks for 2026 have eased slightly, from 0,5% to 0,75%.</div>
+        <div class="cnote">Values as stated in the text of each GFSR.</div>
+      </div>
+      <div class="chart-box wide">
+          <div class="chart-top"><div class="chart-title">Growth-at-Risk, historical rank</div></div>
+          <div class="chart-unit">Percentile rank of the GaR metric (lower = more risk)</div>
+          <div class="cv" style="height:260px"><canvas id="c-gar"></canvas></div>
+          <div class="ctake">Baseline sits near the <b>35th percentile</b>: only moderately elevated by historical standards. The downside scenario drops it into the worst quintile.</div>
+          <div class="cnote">Fig. 1.2.1, panel 3 · semiannual readings.</div>
+        </div>
+    </div>
+  </div>
+
+  <div class="manual-row">
+    <button class="manual-btn" onclick="openManual()">Manual de actualización</button>
+  </div>
+
+</div><!-- end w-inner -->
+</div><!-- end wrapper -->
+
+<!-- MANUAL DE ACTUALIZACIÓN MODAL -->
+<div class="modal-overlay" id="manual-modal" onclick="if(event.target===this)closeManual()">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="manual-title">
+    <button class="modal-close" onclick="closeManual()" aria-label="Cerrar">&times;</button>
+    <div class="modal-title" id="manual-title">Manual de actualización</div>
+    <div class="modal-sub">Cómo agregar el semestre más reciente al tracker</div>
+    <ol class="modal-steps">
+      <li class="modal-step"><span class="num">1.</span><span><b>Entrar</b> a la página del GFSR en <span class="hl">imf.org</span> y descargar el <b>PDF</b> del último "Global Financial Stability Report".</span></li>
+      <li class="modal-step"><span class="num">2.</span><span><b>Guardar</b> el PDF en: <b>W:\4. Informes\-- Informes Semestrales\FMI - GFSR</b></span></li>
+      <li class="modal-step"><span class="num">3.</span><span><b>Adjuntar</b> ese PDF acá, en este chat, para que se agregue el nuevo semestre al tracker.</span></li>
+      <li class="modal-step"><span class="num">4.</span><span><b>Descargar</b> el HTML actualizado y guardarlo en: <b>G:\Unidades compartidas\MFO-Dashboards\Monitores\Estrategia</b></span></li>
+    </ol>
+    <hr class="modal-divider">
+    <div class="modal-note">El GFSR de octubre se publica por partes: los capítulos analíticos salen antes y el Capítulo 1 (el que alimenta este tracker) se publica durante las Reuniones Anuales. Esperar a que esté disponible el Capítulo 1.</div>
+  </div>
+</div>
+
+<script>
+// ---- Segment data (by report) ----
+const regionData = {
+  apr26: {
+    global:{ tag:'Risk level · Elevated', title:'System — Orderly so far, asymmetric ahead', body:'Markets corrected less than in the April 2025 tariff shock, the 2022 Ukraine invasion or the 2020 pandemic, and liquidity held. Resilience rests on strong bank capital, household and corporate cash buffers and central bank backstops. The vulnerability is a long war that tightens conditions abruptly while fiscal and monetary headroom is constrained.' },
+    sov:{ tag:'Risk level · High', title:'Sovereign bonds — Rollover risk and the nexus', body:'Debt-to-GDP is at record highs in core markets, issuance has shifted shorter and price-sensitive investors hold at least half of G4 debt. In an inflationary shock, yields could rise beyond what expectations justify. In weaker EMs, banks now hold ~20% of assets in local sovereign debt (15% pre-pandemic).' },
+    eq:{ tag:'Risk level · High', title:'Equities — Contained correction, high concentration', body:'Pre-war, forward P/Es were near historical highs and somewhat above fair value. Concentration exceeds the 95th percentile in two of six major markets, and rest-of-world valuation gains on US equities near $6 tn spread US stress abroad. Rotation out of software into AI hardware reflects AI-disruption fears.' },
+    hf:{ tag:'Risk level · High', title:'Hedge funds — Leverage in the bond market', body:'Gross fixed-income notional above $18 tn (from <$9 tn in 2020); basis trade over $1 tn, plus swap-spread and other arbitrage. Multistrategy and macro funds sharply increased prime brokerage and repo borrowing. A repo-rate spike could force unwinds that spill into Treasuries and other markets.' },
+    opt:{ tag:'Risk level · Medium–High', title:'Options & leveraged ETFs — Volatility suppressed, not removed', body:'Options trade close to 80% of cash volume; 0DTE is ~60% of S&P 500 options. Dynamic volatility sellers can withdraw fast, flipping dealers into procyclical hedging. Leveraged ETFs add end-of-day rebalancing flows and show higher volatility only in stressed periods.' },
+    em:{ tag:'Risk level · High', title:'Emerging markets — Hit hardest, carry exposed', body:'Spreads widened from tight levels and outflows have been faster than in recent geopolitical episodes. Pre-war gains were mostly dollar-driven; oil importers underperformed since. Rising hedge fund sensitivity to carry factors and derivative-based NBFI exposure raise unwind risk. Chapter 2 shows nonresident nonbanks are far more risk-sensitive than residents.' },
+    pc:{ tag:'Risk level · Medium', title:'Private credit — Early fault lines', body:'Payment defaults in direct lending are rising from a low base; ~20% of loans are to software firms facing AI disruption. Under stressed rates or earnings, distressed borrowers could rise 2–3×. Semi-liquid retail vehicles (~1/5 of direct lending) are the weak spot; systemic impact judged contained.' },
+    ai:{ tag:'Risk level · Medium', title:'AI stack — Circularity and obsolescence', body:'Hyperscalers are expected to account for ~70% of $3,4 tn in AI capex through 2029. Core firms show no balance-sheet stress, but energizers and operators are more fragile. Circular deals boost correlated valuations; a shorter GPU life than the ~7-year accounting assumption could force more debt issuance.' },
+    banks:{ tag:'Risk level · Low–Medium', title:'Banks — Resilient, with a weak tail', body:'Global NPLs remain below 1,4%. Banks with $25 tn of assets (12% of the global total) are on the IMF monitoring list. Exposure to NBFIs is close to 13% of world GDP, and capital distributions are expected to remain high. Frontier markets show uneven gains in resilience.' },
+    latam:{ tag:'Risk level · Medium', title:'Latin America — Rate paths repriced', body:'Latam policy-rate expectations (Brazil, Chile, Colombia, Mexico) moved higher with the war. Brazil, Chile, Colombia, Mexico and Peru are among the 15 major EMs absorbing most nonresident flows. The Chilean peso is the clearest case: its ~9% gain from 2025:Q1 to the war came almost entirely from the dollar factor (carry was negative), and it has since lost ~5,7%, the second-largest reversal after Hungary. Colombia was the only one of the 15 to appreciate after the war began.' }
+  },
+  oct25: {
+    global:{ tag:'Risk level · Elevated', title:'System — Complacent calm', body:'Financial conditions eased back to accommodative after the April tariff shock, with record equities, narrow spreads and abundant liquidity. GaR improved only 0,1pp. The IMF stressed that valuations, sovereign debt and NBFI growth reinforce each other.' },
+    eq:{ tag:'Risk level · High', title:'Equities — Stretched and concentrated', body:'S&P 500 forward P/E near the 96th percentile vs model fair value around the 81st. M7 is 33% of the index, IT 35%; concentration is higher than in the dot-com bubble. AI-related investment drove a large share of US growth, so disappointment would hit both markets and activity.' },
+    fx:{ tag:'Risk level · Medium', title:'Dollar & FX — Hedging feedback', body:'USD fell ~10% YTD while rate differentials stayed wide. Non-US investors hold $31 tn of US securities, largely under-hedged; a rush to hedge sells dollars forward and widens CIP deviations in shallow FX markets. Chapter 2 maps how uncertainty shocks impair FX liquidity.' },
+    sov:{ tag:'Risk level · High', title:'Sovereign bonds — Fiscal pressure priced', body:'G4 curves steepened, swap spreads turned more negative and convenience yields eroded. A scenario of extreme fund outflows plus a 100 bp rate shock implies about $300 bn of forced Treasury sales by bond funds.' },
+    em:{ tag:'Risk level · Medium', title:'Emerging markets — Pressures eased, caution remains', body:'Weaker dollar and disinflation allowed EM rate cuts; inflows favored local-currency funds. IG spreads at 2007 lows. Option markets price two-way tail risk for sub-IG currencies, and lower-rated sovereigns face r > g (Chapter 3).' },
+    frontier:{ tag:'Risk level · High', title:'Frontier — Maturity wall', body:'Eurobond issuance reached ~$13 bn by August but access was uneven, with shorter tenors and smaller deals. Several frontier bonds yield over 10%, maturities cluster in late 2025–early 2026 (especially sub-Saharan Africa), and issuers are turning to private placements and bilateral loans.' },
+    banks:{ tag:'Risk level · Medium', title:'Banks — Better capital, persistent weak tail', body:'Global Stress Test: 18% of bank assets fall below CET1 7% plus G-SIB buffer in the adverse scenario, 21% when NBFI shocks are added (higher risk weights, full drawdown of commitments).' },
+    credit:{ tag:'Risk level · Medium', title:'Corporate & private credit — Weak tail struggling', body:'Corporates resilient overall, but in a tariff-plus-refinancing scenario debt with interest coverage below 1 could reach 55% in some countries. Downgrades and restructurings rose in leveraged loans and private credit; growing retail participation could amplify a downturn.' },
+    stable:{ tag:'Risk level · Emerging', title:'Stablecoins — New fault line', body:'Dollar-pegged stablecoins are growing fast. The IMF flags currency substitution in weaker economies, changes in bond-market structure and potential runs forcing sales of reserve assets such as T-bills.' }
+  }
+};
+
+function showRegion(report, region, btn) {
+  const d = regionData[report][region];
+  const box = document.getElementById('region-' + report);
+  box.innerHTML = '<div class="tone-label">' + d.tag + '</div><div class="tone-title" style="margin-bottom:6px">' + d.title + '</div><div class="tone-body">' + d.body + '</div>';
+  document.querySelectorAll('#rtabs-' + report + ' .rtab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+
+function showPanel(id, btn) {
+  document.querySelectorAll('.mp').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  document.querySelectorAll('.tb, .tbg').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (id === 'charts' || id === 'garhist') renderCharts();
+}
+
+function showChartGroup(g, btn) {
+  document.querySelectorAll('.cgroup').forEach(el => el.classList.remove('active'));
+  document.getElementById('cgroup-' + g).classList.add('active');
+  document.querySelectorAll('#ctabs .rtab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderCharts();
+}
+
+function jumpBlk(i) {
+  const el = document.getElementById('blk-' + i);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---- Charts (data extracted from the GFSR PDFs' vector figures) ----
+const DATA = {"gar": [[2012.15, 42.9], [2012.65, 69.2], [2013.16, 87.4], [2013.66, 66.5], [2014.16, 81.1], [2014.66, 82.9], [2015.16, 52.9], [2015.66, 31.1], [2016.16, 37.4], [2016.66, 77.4], [2017.16, 85.6], [2017.66, 91.1], [2018.17, 88.3], [2018.67, 84.7], [2019.17, 75.4], [2019.66, 79.8], [2020.16, 11.5], [2020.66, 37.8], [2021.16, 48.8], [2021.66, 42.1], [2022.16, 28.7], [2022.66, 17.8], [2023.17, 22.5], [2023.67, 22.5], [2024.17, 38.9], [2024.67, 48.0], [2025.17, 28.8], [2025.67, 33.5], [2026.17, 37.6]], "fci": [[2015.14, 0.07], [2015.37, 0.04], [2015.62, -0.06], [2015.87, 0.34], [2016.12, 0.14], [2016.37, 0.3], [2016.62, 0.17], [2016.87, -0.13], [2017.11, -0.1], [2017.36, -0.05], [2017.6, -0.28], [2017.85, -0.53], [2018.1, -0.47], [2018.34, -0.13], [2018.59, 0.12], [2018.84, -0.13], [2019.09, 0.46], [2019.34, -0.01], [2019.59, -0.14], [2019.82, -0.23], [2020.07, -0.34], [2020.32, 1.61], [2020.57, 0.33], [2020.82, -0.09], [2021.07, -0.46], [2021.31, -0.61], [2021.56, -0.87], [2021.81, -0.79], [2022.05, -0.59], [2022.3, 0.14], [2022.55, 0.47], [2022.79, 0.53], [2023.04, 0.46], [2023.29, 0.35], [2023.54, 0.17], [2023.79, -0.03], [2024.04, -0.13], [2024.28, -0.6], [2024.52, -0.77], [2024.77, -0.89], [2025.02, -0.71], [2025.27, -0.71], [2025.51, -0.68], [2025.76, -1.1], [2026.01, -1.11]], "dens_base": [[-2.0, -0.006], [-1.9, -0.006], [-1.8, -0.005], [-1.7, -0.005], [-1.6, -0.005], [-1.5, -0.005], [-1.4, -0.005], [-1.3, -0.004], [-1.2, -0.004], [-1.1, -0.003], [-1.0, -0.002], [-0.9, -0.001], [-0.8, 0.001], [-0.7, 0.001], [-0.6, 0.003], [-0.5, 0.005], [-0.4, 0.008], [-0.3, 0.011], [-0.2, 0.014], [-0.1, 0.017], [0.0, 0.023], [0.1, 0.027], [0.2, 0.033], [0.3, 0.039], [0.4, 0.047], [0.5, 0.055], [0.6, 0.066], [0.7, 0.074], [0.8, 0.086], [0.9, 0.099], [1.0, 0.113], [1.1, 0.126], [1.2, 0.143], [1.3, 0.16], [1.4, 0.178], [1.5, 0.195], [1.6, 0.215], [1.7, 0.235], [1.8, 0.256], [1.9, 0.273], [2.0, 0.294], [2.1, 0.312], [2.2, 0.332], [2.3, 0.348], [2.4, 0.364], [2.5, 0.377], [2.6, 0.39], [2.7, 0.399], [2.8, 0.408], [2.9, 0.413], [3.0, 0.415], [3.1, 0.416], [3.2, 0.414], [3.3, 0.402], [3.4, 0.38], [3.5, 0.343], [3.6, 0.31], [3.7, 0.266], [3.8, 0.226], [3.9, 0.18], [4.0, 0.15], [4.1, 0.112], [4.2, 0.085], [4.3, 0.061], [4.4, 0.045], [4.5, 0.029], [4.6, 0.019], [4.7, 0.011], [4.8, 0.006], [4.9, 0.001], [5.0, -0.001], [5.1, -0.003], [5.2, -0.004], [5.3, -0.005], [5.4, -0.005], [5.5, -0.006], [5.6, -0.006], [5.7, -0.006], [5.8, -0.006], [5.9, -0.006], [6.0, -0.006], [6.1, -0.006], [6.2, -0.006], [6.3, -0.006], [6.4, -0.006], [6.5, -0.006], [6.6, -0.006], [6.7, -0.006], [6.8, -0.006], [6.9, -0.006], [7.0, -0.006], [7.1, -0.006], [7.2, -0.007], [7.3, -0.007], [7.4, -0.007], [7.5, -0.007], [7.6, -0.007], [7.7, -0.007], [7.8, -0.007], [7.9, -0.007], [8.0, -0.007]], "dens_up": [[-2.0, -0.007], [-1.9, -0.007], [-1.8, -0.007], [-1.7, -0.007], [-1.6, -0.007], [-1.5, -0.007], [-1.4, -0.007], [-1.3, -0.007], [-1.2, -0.007], [-1.1, -0.007], [-1.0, -0.007], [-0.9, -0.007], [-0.8, -0.007], [-0.7, -0.007], [-0.6, -0.007], [-0.5, -0.007], [-0.4, -0.007], [-0.3, -0.007], [-0.2, -0.007], [-0.1, -0.007], [0.0, -0.007], [0.1, -0.007], [0.2, -0.007], [0.3, -0.007], [0.4, -0.007], [0.5, -0.007], [0.6, -0.007], [0.7, -0.007], [0.8, -0.007], [0.9, -0.006], [1.0, -0.006], [1.1, -0.006], [1.2, -0.006], [1.3, -0.006], [1.4, -0.006], [1.5, -0.006], [1.6, -0.006], [1.7, -0.005], [1.8, -0.002], [1.9, 0.002], [2.0, 0.011], [2.1, 0.025], [2.2, 0.051], [2.3, 0.082], [2.4, 0.131], [2.5, 0.19], [2.6, 0.263], [2.7, 0.329], [2.8, 0.406], [2.9, 0.458], [3.0, 0.488], [3.1, 0.491], [3.2, 0.491], [3.3, 0.487], [3.4, 0.481], [3.5, 0.469], [3.6, 0.457], [3.7, 0.441], [3.8, 0.423], [3.9, 0.4], [4.0, 0.382], [4.1, 0.356], [4.2, 0.333], [4.3, 0.307], [4.4, 0.284], [4.5, 0.256], [4.6, 0.233], [4.7, 0.208], [4.8, 0.188], [4.9, 0.166], [5.0, 0.146], [5.1, 0.125], [5.2, 0.11], [5.3, 0.094], [5.4, 0.08], [5.5, 0.067], [5.6, 0.057], [5.7, 0.046], [5.8, 0.038], [5.9, 0.03], [6.0, 0.024], [6.1, 0.018], [6.2, 0.014], [6.3, 0.009], [6.4, 0.007], [6.5, 0.004], [6.6, 0.002], [6.7, -0.0], [6.8, -0.001], [6.9, -0.003], [7.0, -0.004], [7.1, -0.004], [7.2, -0.005], [7.3, -0.005], [7.4, -0.005], [7.5, -0.006], [7.6, -0.006], [7.7, -0.006], [7.8, -0.006], [7.9, -0.006], [8.0, -0.006]], "dens_down": [[-2.0, 0.004], [-1.9, 0.005], [-1.8, 0.006], [-1.7, 0.007], [-1.6, 0.009], [-1.5, 0.01], [-1.4, 0.012], [-1.3, 0.014], [-1.2, 0.016], [-1.1, 0.019], [-1.0, 0.022], [-0.9, 0.024], [-0.8, 0.028], [-0.7, 0.031], [-0.6, 0.035], [-0.5, 0.039], [-0.4, 0.044], [-0.3, 0.048], [-0.2, 0.053], [-0.1, 0.059], [0.0, 0.066], [0.1, 0.072], [0.2, 0.08], [0.3, 0.086], [0.4, 0.095], [0.5, 0.103], [0.6, 0.113], [0.7, 0.121], [0.8, 0.132], [0.9, 0.142], [1.0, 0.153], [1.1, 0.163], [1.2, 0.176], [1.3, 0.188], [1.4, 0.2], [1.5, 0.211], [1.6, 0.223], [1.7, 0.236], [1.8, 0.248], [1.9, 0.258], [2.0, 0.27], [2.1, 0.28], [2.2, 0.291], [2.3, 0.299], [2.4, 0.308], [2.5, 0.315], [2.6, 0.321], [2.7, 0.326], [2.8, 0.33], [2.9, 0.333], [3.0, 0.334], [3.1, 0.334], [3.2, 0.333], [3.3, 0.323], [3.4, 0.304], [3.5, 0.274], [3.6, 0.247], [3.7, 0.212], [3.8, 0.18], [3.9, 0.145], [4.0, 0.122], [4.1, 0.094], [4.2, 0.073], [4.3, 0.055], [4.4, 0.043], [4.5, 0.03], [4.6, 0.022], [4.7, 0.015], [4.8, 0.01], [4.9, 0.006], [5.0, 0.003], [5.1, 0.0], [5.2, -0.001], [5.3, -0.003], [5.4, -0.004], [5.5, -0.005], [5.6, -0.005], [5.7, -0.005], [5.8, -0.005], [5.9, -0.006], [6.0, -0.006], [6.1, -0.006], [6.2, -0.006], [6.3, -0.006], [6.4, -0.006], [6.5, -0.006], [6.6, -0.006], [6.7, -0.006], [6.8, -0.006], [6.9, -0.006], [7.0, -0.006], [7.1, -0.006], [7.2, -0.006], [7.3, -0.006], [7.4, -0.006], [7.5, -0.006], [7.6, -0.006], [7.7, -0.006], [7.8, -0.006], [7.9, -0.006], [8.0, -0.006]], "eq": {"Japan": [[-1, 100.0], [1, 102.9], [5, 104.9], [7, 105.2], [9, 105.1], [13, 107.1], [15, 109.5], [19, 111.8], [21, 107.1], [23, 107.2], [27, 108.4], [29, 109.4], [33, 107.3], [35, 103.6], [37, 103.7], [41, 103.8], [43, 107.0], [47, 105.1], [49, 106.3], [51, 107.8], [55, 108.1], [57, 107.0], [61, 107.0], [63, 105.7], [65, 105.6], [69, 107.5], [71, 107.5], [75, 107.8], [77, 107.4], [79, 107.4], [83, 112.0], [85, 109.1], [89, 110.8], [91, 116.1], [93, 115.2], [97, 113.1], [99, 114.6], [103, 112.9], [105, 114.0], [107, 113.9], [111, 116.8], [113, 114.9], [117, 120.3], [119, 123.1], [121, 121.5], [125, 120.8], [127, 122.7], [131, 121.3], [133, 125.1], [135, 125.6], [139, 120.1], [141, 118.0], [145, 112.6], [147, 117.5], [149, 114.9], [153, 114.6], [155, 114.0], [159, 109.9], [161, 114.8], [163, 114.0], [167, 109.0], [169, 111.9], [169, 111.9]], "Asia ex. Japan": [[-1, 100.0], [1, 102.2], [5, 103.7], [7, 102.4], [9, 104.0], [13, 105.2], [15, 104.5], [19, 105.2], [21, 104.0], [23, 102.7], [27, 104.6], [29, 103.4], [33, 102.3], [35, 101.1], [37, 99.6], [41, 101.1], [43, 101.7], [47, 101.8], [49, 101.8], [51, 102.7], [55, 102.2], [57, 102.5], [61, 100.8], [63, 98.3], [65, 100.5], [69, 101.6], [71, 101.8], [75, 102.5], [77, 102.5], [79, 105.7], [83, 107.8], [85, 107.0], [89, 109.0], [91, 108.4], [93, 108.7], [97, 107.4], [99, 109.6], [103, 110.2], [105, 113.1], [107, 110.4], [111, 110.9], [113, 109.1], [117, 112.8], [119, 115.2], [121, 114.2], [125, 114.0], [127, 114.3], [131, 115.4], [133, 118.7], [135, 117.5], [139, 109.8], [141, 108.4], [145, 109.9], [147, 110.7], [149, 107.3], [153, 111.0], [155, 109.2], [159, 108.2], [161, 107.5], [163, 103.5], [167, 106.0], [169, 103.6], [169, 103.6]], "World": [[-1, 100.0], [1, 100.5], [5, 101.7], [7, 101.2], [9, 102.3], [13, 103.6], [15, 102.7], [19, 102.9], [21, 101.9], [23, 101.3], [27, 103.0], [29, 102.2], [33, 101.0], [35, 99.9], [37, 99.2], [41, 101.3], [43, 102.3], [47, 102.3], [49, 102.8], [51, 103.3], [55, 102.8], [57, 103.7], [61, 102.9], [63, 101.6], [65, 103.0], [69, 104.2], [71, 104.5], [75, 104.2], [77, 103.7], [79, 104.1], [83, 105.8], [85, 105.1], [89, 106.1], [91, 105.9], [93, 106.1], [97, 104.5], [99, 105.9], [103, 106.7], [105, 107.4], [107, 106.7], [111, 106.7], [113, 104.9], [117, 107.6], [119, 107.9], [121, 106.5], [125, 106.4], [127, 107.0], [131, 106.9], [133, 108.4], [135, 108.0], [139, 105.2], [141, 105.0], [145, 103.8], [147, 104.5], [149, 102.1], [153, 103.5], [155, 101.6], [159, 100.6], [161, 101.7], [163, 98.8], [167, 100.0], [169, 101.8], [169, 101.8]], "China": [[-1, 100.0], [1, 101.7], [5, 99.9], [7, 101.1], [9, 102.6], [13, 103.3], [15, 103.7], [19, 102.5], [21, 101.8], [23, 103.0], [27, 102.4], [29, 103.5], [33, 101.3], [35, 101.1], [37, 98.1], [41, 98.9], [43, 99.4], [47, 100.7], [49, 99.8], [51, 101.0], [55, 101.3], [57, 100.2], [61, 100.2], [63, 100.8], [65, 100.6], [69, 101.7], [71, 102.2], [75, 102.2], [77, 101.9], [79, 101.9], [83, 105.5], [85, 104.4], [89, 105.4], [91, 104.4], [93, 104.1], [97, 103.9], [99, 104.0], [103, 103.6], [105, 103.9], [107, 103.6], [111, 102.6], [113, 102.8], [117, 103.9], [119, 103.8], [121, 102.6], [125, 102.6], [127, 102.6], [131, 102.6], [133, 104.2], [135, 103.7], [139, 102.5], [141, 102.3], [145, 101.6], [147, 103.6], [149, 102.8], [153, 102.1], [155, 101.0], [159, 97.2], [161, 99.9], [163, 99.1], [167, 98.0], [169, 98.7], [169, 98.7]], "Emerging markets": [[-1, 100.0], [1, 102.3], [5, 103.6], [7, 102.4], [9, 103.9], [13, 105.1], [15, 104.6], [19, 105.0], [21, 104.0], [23, 102.9], [27, 104.8], [29, 103.6], [33, 102.5], [35, 101.6], [37, 100.2], [41, 101.6], [43, 102.4], [47, 102.4], [49, 102.5], [51, 103.3], [55, 102.9], [57, 103.6], [61, 102.1], [63, 99.2], [65, 101.4], [69, 102.5], [71, 102.7], [75, 103.1], [77, 103.3], [79, 106.1], [83, 108.1], [85, 107.3], [89, 109.3], [91, 109.0], [93, 109.2], [97, 108.1], [99, 110.7], [103, 111.6], [105, 114.8], [107, 111.5], [111, 112.6], [113, 110.4], [117, 114.3], [119, 116.3], [121, 115.4], [125, 115.0], [127, 115.3], [131, 116.4], [133, 119.6], [135, 118.1], [139, 110.3], [141, 108.7], [145, 110.3], [147, 111.0], [149, 107.2], [153, 110.8], [155, 108.7], [159, 108.1], [161, 108.3], [163, 104.1], [167, 107.1], [169, 104.8], [169, 104.8]], "Europe": [[-1, 100.0], [1, 101.7], [5, 102.3], [7, 101.5], [9, 102.2], [13, 102.7], [15, 102.6], [19, 102.3], [21, 102.1], [23, 100.2], [27, 103.0], [29, 103.4], [33, 101.5], [35, 99.8], [37, 99.3], [41, 100.3], [43, 101.7], [47, 102.1], [49, 102.5], [51, 103.0], [55, 102.9], [57, 103.6], [61, 103.6], [63, 102.3], [65, 103.7], [69, 103.5], [71, 103.5], [75, 103.6], [77, 104.2], [79, 105.3], [83, 106.8], [85, 106.3], [89, 108.3], [91, 108.1], [93, 108.5], [97, 106.1], [99, 107.2], [103, 107.2], [105, 106.8], [107, 107.1], [111, 107.9], [113, 106.7], [117, 109.1], [119, 108.6], [121, 107.8], [125, 108.4], [127, 109.1], [131, 110.1], [133, 111.1], [135, 110.5], [139, 103.9], [141, 104.1], [145, 102.4], [147, 104.4], [149, 102.9], [153, 103.8], [155, 101.1], [159, 100.3], [161, 101.7], [163, 99.1], [167, 100.3], [169, 101.0], [169, 101.0]], "United States": [[-1, 100.0], [1, 99.8], [5, 101.3], [7, 100.7], [9, 102.2], [13, 103.7], [15, 102.6], [19, 103.0], [21, 102.3], [23, 101.2], [27, 102.9], [29, 101.3], [33, 100.4], [35, 99.9], [37, 99.3], [41, 101.7], [43, 102.5], [47, 102.5], [49, 103.0], [51, 103.4], [55, 102.9], [57, 103.8], [61, 102.5], [63, 101.1], [65, 102.8], [69, 103.9], [71, 104.2], [75, 103.9], [77, 102.9], [79, 103.1], [83, 104.5], [85, 104.1], [89, 104.9], [91, 104.1], [93, 104.4], [97, 102.3], [99, 104.0], [103, 104.6], [105, 104.9], [107, 104.4], [111, 104.0], [113, 102.3], [117, 104.8], [119, 104.4], [121, 102.8], [125, 102.9], [127, 103.3], [131, 102.8], [133, 104.5], [135, 103.5], [139, 102.5], [141, 102.7], [145, 102.2], [147, 101.9], [149, 99.8], [153, 101.1], [155, 99.3], [159, 99.0], [161, 99.1], [163, 95.8], [167, 98.2], [169, 97.8], [169, 97.8]]}, "fx": {"HUN": {"dollar": 9.8, "carry": 18.2, "since": -7.1, "before": 18.2}, "COL": {"dollar": 7.8, "carry": 16.4, "since": 1.0, "before": 16.4}, "POL": {"dollar": 10.2, "carry": 13.7, "since": -3.1, "before": 13.8}, "MEX": {"dollar": 7.3, "carry": 12.2, "since": -3.5, "before": 12.3}, "ZAF": {"dollar": 10.3, "carry": 11.8, "since": -4.4, "before": 11.8}, "BRA": {"dollar": 8.8, "carry": 11.3, "since": -1.5, "before": 11.3}, "PER": {"dollar": 4.2, "carry": 10.5, "since": -3.7, "before": 10.5}, "ROU": {"dollar": 8.0, "carry": 10.4, "since": -1.9, "before": 10.4}, "MYS": {"dollar": 7.3, "carry": 10.0, "since": -1.8, "before": 10.0}, "THA": {"dollar": 8.2, "carry": 9.7, "since": -2.8, "before": 9.7}, "CHL": {"dollar": 11.3, "carry": -2.2, "since": -5.7, "before": 9.2}, "CHN": {"dollar": 2.8, "carry": 3.7, "since": -1.0, "before": 4.2}, "PHL": {"dollar": 4.3, "carry": -5.1, "since": -3.2, "before": -0.7}, "IDN": {"dollar": 5.8, "carry": -9.0, "since": -1.1, "before": -3.3}, "IND": {"dollar": 1.3, "carry": -6.2, "since": -1.5, "before": -5.0}}, "rv": {"Cash-futures basis": {"2013": -0.01, "2014": 0.05, "2015": 0.04, "2016": 0.04, "2017": 0.06, "2018": 0.09, "2019": 0.48, "2020": 0.35, "2021": 0.13, "2022": 0.08, "2023": 0.37, "2024": 0.67, "2025": 0.93, "last": 1.03}, "Swap spread trade": {"2013": 0.32, "2014": 0.44, "2015": 0.46, "2016": 0.43, "2017": 0.41, "2018": 0.34, "2019": 0.99, "2020": 0.77, "2021": 0.31, "2022": 0.39, "2023": 0.79, "2024": 0.95, "2025": 1.64, "last": 1.66}, "Other arbitrage": {"2013": 0.59, "2014": 0.65, "2015": 0.7, "2016": 0.67, "2017": 0.72, "2018": 0.7, "2019": 1.2, "2020": 1.13, "2021": 0.9, "2022": 0.97, "2023": 1.12, "2024": 1.61, "2025": 2.23, "last": 2.35}}, "borrow": {"Multistrategy": {"2013": 0.44, "2014": 0.6, "2015": 0.66, "2016": 0.7, "2017": 0.89, "2018": 0.9, "2019": 0.92, "2020": 0.83, "2021": 1.26, "2022": 1.43, "2023": 1.5, "2024": 2.04, "2025": 2.37, "last": 2.93}, "Relative value": {"2013": 0.89, "2014": 0.92, "2015": 1.16, "2016": 1.16, "2017": 1.33, "2018": 1.38, "2019": 1.61, "2020": 1.58, "2021": 1.65, "2022": 1.94, "2023": 1.96, "2024": 2.76, "2025": 3.2, "last": 4.01}, "Macro": {"2013": 0.99, "2014": 1.04, "2015": 1.24, "2016": 1.26, "2017": 1.53, "2018": 1.76, "2019": 2.11, "2020": 2.01, "2021": 2.19, "2022": 2.42, "2023": 2.53, "2024": 3.47, "2025": 4.22, "last": 4.64}, "Equity": {"2013": 1.42, "2014": 1.53, "2015": 1.75, "2016": 1.7, "2017": 1.99, "2018": 2.3, "2019": 2.67, "2020": 2.48, "2021": 2.88, "2022": 3.1, "2023": 3.25, "2024": 4.38, "2025": 5.49, "last": 6.08}, "Other": {"2013": 1.55, "2014": 1.74, "2015": 1.96, "2016": 1.9, "2017": 2.19, "2018": 2.54, "2019": 2.98, "2020": 2.82, "2021": 3.21, "2022": 3.49, "2023": 3.71, "2024": 4.89, "2025": 6.11, "last": 6.96}}, "top10": [[2013.04, 31.8], [2013.29, 26.6], [2013.54, 24.0], [2013.79, 20.7], [2014.04, 21.2], [2014.3, 19.7], [2014.54, 21.6], [2014.8, 22.0], [2015.04, 21.6], [2015.29, 19.6], [2015.54, 20.0], [2015.79, 18.6], [2016.05, 20.2], [2016.29, 24.4], [2016.54, 25.6], [2016.79, 27.4], [2017.04, 24.7], [2017.29, 27.7], [2017.54, 27.0], [2017.79, 27.1], [2018.04, 24.4], [2018.29, 24.2], [2018.54, 22.4], [2018.79, 22.9], [2019.04, 24.0], [2019.29, 23.9], [2019.54, 21.5], [2019.79, 22.0], [2020.04, 26.3], [2020.29, 26.7], [2020.54, 32.1], [2020.79, 31.3], [2021.04, 31.7], [2021.28, 29.4], [2021.54, 30.5], [2021.79, 30.2], [2022.04, 31.3], [2022.29, 29.6], [2022.53, 30.2], [2022.79, 30.2], [2023.03, 31.3], [2023.29, 32.9], [2023.54, 33.2], [2023.79, 33.7], [2024.04, 34.4], [2024.28, 34.3], [2024.54, 36.5], [2024.78, 34.4], [2025.04, 35.5], [2025.28, 35.6], [2025.54, 36.0]], "def_DL selective": [["2017-08", 1.33], ["2017-09", 1.44], ["2017-10", 1.64], ["2017-11", 2.04], ["2017-12", 2.24], ["2018-01", 2.33], ["2018-02", 2.33], ["2018-03", 2.24], ["2018-04", 2.44], ["2018-05", 2.04], ["2018-06", 1.93], ["2018-07", 1.64], ["2018-08", 1.73], ["2018-09", 1.53], ["2018-10", 1.64], ["2018-11", 1.24], ["2018-12", 0.84], ["2019-01", 0.93], ["2019-02", 0.93], ["2019-03", 0.93], ["2019-04", 0.93], ["2019-05", 1.04], ["2019-06", 1.13], ["2019-07", 1.13], ["2019-08", 0.93], ["2019-09", 0.93], ["2019-10", 1.04], ["2019-11", 0.93], ["2019-12", 0.84], ["2020-01", 1.24], ["2020-02", 1.33], ["2020-03", 1.53], ["2020-04", 3.93], ["2020-05", 5.63], ["2020-06", 6.83], ["2020-07", 7.83], ["2020-08", 7.92], ["2020-09", 7.83], ["2020-10", 7.63], ["2020-11", 7.23], ["2020-12", 7.63], ["2021-01", 7.23], ["2021-02", 6.72], ["2021-03", 6.63], ["2021-04", 4.52], ["2021-05", 3.33], ["2021-06", 2.13], ["2021-07", 1.84], ["2021-08", 1.84], ["2021-09", 1.84], ["2021-10", 1.93], ["2021-11", 2.24], ["2021-12", 2.24], ["2022-01", 2.93], ["2022-02", 3.33], ["2022-03", 3.44], ["2022-04", 3.53], ["2022-05", 3.04], ["2022-06", 2.84], ["2022-07", 2.93], ["2022-08", 2.84], ["2022-09", 2.33], ["2022-10", 2.53], ["2022-11", 2.93], ["2022-12", 2.93], ["2023-01", 3.04], ["2023-02", 3.04], ["2023-03", 3.24], ["2023-04", 3.13], ["2023-05", 3.84], ["2023-06", 4.13], ["2023-07", 4.24], ["2023-08", 4.32], ["2023-09", 4.83], ["2023-10", 4.83], ["2023-11", 5.23], ["2023-12", 5.32], ["2024-01", 5.63], ["2024-02", 5.52], ["2024-03", 5.63], ["2024-04", 5.72], ["2024-05", 5.63], ["2024-06", 5.43], ["2024-07", 5.43], ["2024-08", 5.23], ["2024-09", 5.03], ["2024-10", 5.12], ["2024-11", 5.23], ["2024-12", 5.52], ["2025-01", 5.32], ["2025-02", 5.23], ["2025-03", 5.23], ["2025-04", 4.92], ["2025-05", 5.03], ["2025-06", 5.03], ["2025-07", 5.12], ["2025-08", 5.12], ["2025-10", 5.12], ["2025-11", 5.12], ["2025-12", 4.72], ["2026-01", 4.44], ["2026-02", 4.44]], "def_DL payment": [["2017-08", 1.33], ["2017-09", 1.44], ["2017-10", 1.64], ["2017-11", 2.04], ["2017-12", 2.13], ["2018-01", 2.04], ["2018-02", 2.04], ["2018-03", 1.93], ["2018-04", 2.04], ["2018-05", 1.64], ["2018-06", 1.53], ["2018-07", 1.24], ["2018-08", 1.24], ["2018-09", 1.04], ["2018-10", 1.13], ["2018-11", 0.64], ["2018-12", 0.64], ["2019-01", 0.64], ["2019-02", 0.64], ["2019-03", 0.64], ["2019-04", 0.64], ["2019-05", 0.64], ["2019-06", 0.73], ["2019-07", 0.73], ["2019-08", 0.73], ["2019-09", 0.73], ["2019-10", 0.73], ["2019-11", 0.73], ["2019-12", 0.53], ["2020-01", 1.04], ["2020-02", 0.84], ["2020-03", 0.93], ["2020-04", 1.04], ["2020-05", 1.64], ["2020-06", 2.24], ["2020-07", 2.33], ["2020-08", 2.43], ["2020-09", 2.33], ["2020-10", 2.04], ["2020-11", 1.93], ["2020-12", 2.13], ["2021-01", 1.73], ["2021-02", 1.53], ["2021-03", 1.84], ["2021-04", 1.73], ["2021-05", 1.13], ["2021-06", 0.44], ["2021-07", 0.44], ["2021-08", 0.33], ["2021-09", 0.33], ["2021-10", 0.33], ["2021-11", 0.44], ["2021-12", 0.64], ["2022-01", 0.64], ["2022-02", 0.73], ["2022-03", 0.84], ["2022-04", 0.84], ["2022-05", 0.84], ["2022-06", 0.73], ["2022-07", 0.64], ["2022-08", 0.64], ["2022-09", 0.24], ["2022-10", 0.44], ["2022-11", 0.44], ["2022-12", 0.44], ["2023-01", 0.44], ["2023-02", 0.44], ["2023-03", 0.53], ["2023-04", 0.53], ["2023-05", 0.53], ["2023-06", 0.64], ["2023-07", 0.73], ["2023-08", 0.73], ["2023-09", 0.84], ["2023-10", 0.84], ["2023-11", 0.84], ["2023-12", 0.93], ["2024-01", 0.93], ["2024-02", 0.93], ["2024-03", 0.93], ["2024-04", 1.04], ["2024-05", 0.93], ["2024-06", 0.93], ["2024-07", 0.84], ["2024-08", 0.84], ["2024-09", 0.84], ["2024-10", 0.93], ["2024-11", 0.93], ["2024-12", 1.04], ["2025-01", 1.04], ["2025-02", 1.04], ["2025-03", 1.13], ["2025-04", 1.04], ["2025-05", 1.13], ["2025-06", 1.13], ["2025-07", 1.24], ["2025-08", 1.33], ["2025-10", 1.24], ["2025-11", 1.24], ["2025-12", 1.13], ["2026-01", 1.04], ["2026-02", 1.04]], "def_HY selective": [["2017-08", 3.44], ["2017-09", 3.33], ["2017-10", 3.04], ["2017-11", 3.04], ["2017-12", 3.04], ["2018-01", 2.93], ["2018-02", 3.04], ["2018-03", 3.13], ["2018-04", 3.24], ["2018-05", 3.13], ["2018-06", 3.04], ["2018-07", 2.93], ["2018-08", 2.73], ["2018-09", 2.64], ["2018-10", 2.64], ["2018-11", 2.53], ["2018-12", 2.64], ["2019-01", 2.33], ["2019-02", 2.24], ["2019-03", 2.13], ["2019-04", 2.04], ["2019-05", 2.44], ["2019-06", 2.24], ["2019-07", 2.33], ["2019-08", 2.44], ["2019-09", 2.53], ["2019-10", 2.73], ["2019-11", 2.93], ["2019-12", 3.04], ["2020-01", 3.04], ["2020-02", 3.13], ["2020-03", 3.13], ["2020-04", 3.44], ["2020-05", 4.04], ["2020-06", 4.64], ["2020-07", 5.32], ["2020-08", 5.83], ["2020-09", 6.12], ["2020-10", 6.23], ["2020-11", 6.23], ["2020-12", 6.43], ["2021-01", 6.62], ["2021-02", 6.52], ["2021-03", 6.32], ["2021-04", 6.23], ["2021-05", 5.32], ["2021-06", 4.64], ["2021-07", 3.73], ["2021-08", 3.04], ["2021-09", 2.84], ["2021-10", 2.33], ["2021-11", 1.93], ["2021-12", 1.64], ["2022-01", 1.44], ["2022-02", 1.44], ["2022-03", 1.44], ["2022-04", 1.33], ["2022-05", 1.23], ["2022-06", 1.23], ["2022-07", 1.33], ["2022-08", 1.23], ["2022-09", 1.44], ["2022-10", 1.53], ["2022-11", 1.44], ["2022-12", 1.64], ["2023-01", 1.64], ["2023-02", 1.64], ["2023-03", 1.93], ["2023-04", 2.44], ["2023-05", 2.33], ["2023-06", 2.84], ["2023-07", 3.24], ["2023-08", 3.53], ["2023-09", 3.73], ["2023-10", 4.04], ["2023-11", 4.04], ["2023-12", 4.32], ["2024-01", 4.44], ["2024-02", 4.64], ["2024-03", 4.64], ["2024-04", 4.72], ["2024-05", 4.83], ["2024-06", 4.64], ["2024-07", 4.52], ["2024-08", 4.32], ["2024-09", 4.52], ["2024-10", 4.32], ["2024-11", 4.72], ["2024-12", 4.83], ["2025-01", 5.03], ["2025-02", 5.03], ["2025-03", 4.64], ["2025-04", 4.52], ["2025-05", 4.24], ["2025-06", 4.52], ["2025-07", 4.72], ["2025-08", 4.64], ["2025-10", 4.72], ["2025-11", 4.52], ["2025-12", 4.32], ["2026-01", 3.93], ["2026-02", 3.64]], "bdc_red": [2.38, 3.82, 3.22, 3.82, 1.75, 1.66, 1.57, 1.1, 1.1, 1.16, 1.31, 2.29, 1.69, 4.44], "bdc_sub": [14.4, 7.4, 5.5, 9.2, 11.5, 13.6, 14.8, 15.6, 11.4, 11.4, 12.8, 10.6, 10.4, 7.7], "nexus": {"ccc75": [[2020.0, 14.3], [2020.12, 14.6], [2020.29, 14.7], [2020.46, 16.1], [2020.63, 15.1], [2020.79, 15.3], [2020.96, 16.1], [2021.13, 16.2], [2021.29, 17.6], [2021.46, 17.2], [2021.63, 17.7], [2021.79, 17.7], [2021.96, 17.5], [2022.13, 17.9], [2022.29, 19.1], [2022.46, 17.8], [2022.63, 18.8], [2022.79, 18.3], [2022.96, 18.5], [2023.13, 18.7], [2023.29, 18.2], [2023.46, 19.8], [2023.63, 18.8], [2023.79, 19.5], [2023.96, 19.9], [2024.13, 19.3], [2024.29, 20.1], [2024.46, 20.5], [2024.63, 20.8], [2024.79, 20.8], [2024.96, 20.8]], "em75": [[2020.0, 14.7], [2020.12, 14.8], [2020.29, 15.3], [2020.46, 15.9], [2020.63, 15.6], [2020.79, 15.5], [2020.96, 16.0], [2021.13, 16.0], [2021.29, 16.9], [2021.46, 17.0], [2021.63, 16.8], [2021.79, 16.9], [2021.96, 16.4], [2022.13, 16.8], [2022.29, 16.5], [2022.46, 16.5], [2022.63, 17.0], [2022.79, 16.7], [2022.96, 16.3], [2023.13, 17.0], [2023.29, 16.7], [2023.46, 16.2], [2023.63, 16.7], [2023.79, 16.7], [2023.96, 16.8], [2024.13, 17.1], [2024.29, 17.6], [2024.46, 17.2], [2024.63, 17.2], [2024.79, 17.1], [2024.96, 16.5]], "med": [[2020.0, 9.1], [2020.12, 9.0], [2020.29, 9.1], [2020.46, 9.8], [2020.63, 10.1], [2020.79, 10.0], [2020.96, 10.3], [2021.13, 9.5], [2021.29, 10.0], [2021.46, 9.8], [2021.63, 10.3], [2021.79, 10.2], [2021.96, 10.6], [2022.13, 10.9], [2022.29, 11.1], [2022.46, 10.6], [2022.63, 10.6], [2022.79, 10.7], [2022.96, 11.1], [2023.13, 10.4], [2023.29, 10.7], [2023.46, 10.5], [2023.63, 10.6], [2023.79, 10.4], [2023.96, 10.7], [2024.13, 11.2], [2024.29, 10.8], [2024.46, 11.2], [2024.63, 10.4], [2024.79, 10.5], [2024.88, 10.0]]}, "stable": {"#005da6": {"2020.0": -1.3, "2020.5": -0.8, "2021.0": 3.0, "2021.5": 24.5, "2022.0": 42.2, "2022.5": 54.2, "2023.0": 42.7, "2023.5": 26.6, "2024.0": 23.5, "2024.5": 32.2, "2025.0": 44.0, "2025.5": 61.6, "last": 70.6}, "#aa1f2e": {"2020.0": 3.0, "2020.5": 9.2, "2021.0": 27.4, "2021.5": 87.5, "2022.0": 120.5, "2022.5": 121.1, "2023.0": 109.0, "2023.5": 109.8, "2024.0": 117.7, "2024.5": 144.3, "2025.0": 181.2, "2025.5": 220.4, "last": 239.4}, "#497637": {"2020.0": 3.3, "2020.5": 9.7, "2021.0": 30.4, "2021.5": 106.0, "2022.0": 149.0, "2022.5": 148.7, "2023.0": 134.9, "2023.5": 122.6, "2024.0": 127.7, "2024.5": 160.2, "2025.0": 204.0, "2025.5": 249.3, "last": 278.5}}, "optline": [[2015.06, 19.6], [2015.09, 17.9], [2015.11, 16.4], [2015.13, 15.7], [2015.15, 16.1], [2015.18, 16.5], [2015.2, 16.4], [2015.22, 15.9], [2015.24, 15.3], [2015.26, 15.7], [2015.28, 15.7], [2015.3, 15.7], [2015.33, 15.6], [2015.35, 15.0], [2015.38, 15.6], [2015.39, 15.9], [2015.42, 16.2], [2015.45, 16.4], [2015.47, 16.4], [2015.49, 17.1], [2015.51, 17.8], [2015.53, 18.8], [2015.55, 19.5], [2015.57, 19.3], [2015.59, 19.2], [2015.62, 17.3], [2015.63, 16.5], [2015.65, 18.9], [2015.69, 20.2], [2015.71, 20.2], [2015.72, 19.7], [2015.74, 18.0], [2015.76, 17.4], [2015.78, 16.9], [2015.8, 16.9], [2015.82, 16.5], [2015.84, 16.9], [2015.86, 17.1], [2015.88, 16.9], [2015.9, 17.8], [2015.92, 17.0], [2015.95, 16.5], [2015.97, 17.1], [2015.99, 16.4], [2016.02, 17.1], [2016.03, 17.8], [2016.06, 16.9], [2016.08, 17.0], [2016.11, 15.6], [2016.13, 14.5], [2016.15, 13.8], [2016.17, 14.3], [2016.19, 15.5], [2016.22, 16.1], [2016.24, 16.6], [2016.25, 16.6], [2016.28, 16.7], [2016.3, 16.7], [2016.33, 16.5], [2016.35, 15.2], [2016.37, 15.3], [2016.39, 15.9], [2016.41, 16.9], [2016.43, 18.3], [2016.46, 19.8], [2016.49, 20.7], [2016.51, 21.4], [2016.53, 22.8], [2016.54, 23.9], [2016.56, 23.8], [2016.59, 22.1], [2016.61, 20.7], [2016.62, 19.3], [2016.64, 19.3], [2016.66, 20.2], [2016.68, 21.5], [2016.7, 22.3], [2016.72, 23.0], [2016.74, 23.3], [2016.76, 22.4], [2016.78, 21.4], [2016.8, 20.9], [2016.82, 20.5], [2016.84, 19.8], [2016.86, 21.1], [2016.89, 21.2], [2016.91, 21.6], [2016.93, 22.8], [2016.96, 21.2], [2016.98, 21.9], [2017.0, 20.2], [2017.02, 21.6], [2017.05, 20.5], [2017.07, 21.0], [2017.09, 21.1], [2017.11, 20.5], [2017.13, 21.2], [2017.15, 22.1], [2017.17, 23.0], [2017.2, 24.6], [2017.22, 24.3], [2017.24, 23.0], [2017.26, 22.9], [2017.28, 21.6], [2017.3, 22.7], [2017.33, 23.8], [2017.35, 22.7], [2017.37, 22.8], [2017.39, 21.0], [2017.41, 20.0], [2017.43, 20.9], [2017.45, 20.6], [2017.47, 20.2], [2017.49, 18.9], [2017.51, 18.0], [2017.53, 18.2], [2017.55, 18.9], [2017.58, 20.3], [2017.6, 20.5], [2017.62, 21.1], [2017.64, 22.8], [2017.66, 25.1], [2017.68, 26.4], [2017.7, 26.9], [2017.72, 25.7], [2017.75, 23.9], [2017.78, 24.3], [2017.8, 25.1], [2017.82, 25.6], [2017.84, 27.0], [2017.86, 25.0], [2017.87, 22.9], [2017.89, 24.2], [2017.91, 25.1], [2017.93, 27.7], [2017.95, 27.5], [2017.98, 26.9], [2018.0, 25.1], [2018.02, 24.6], [2018.04, 26.0], [2018.07, 28.2], [2018.09, 29.3], [2018.11, 29.2], [2018.13, 29.2], [2018.15, 28.9], [2018.17, 28.9], [2018.2, 28.2], [2018.22, 28.0], [2018.24, 26.5], [2018.26, 26.8], [2018.28, 27.0], [2018.31, 26.8], [2018.33, 28.0], [2018.35, 26.2], [2018.36, 25.9], [2018.38, 26.2], [2018.4, 25.1], [2018.42, 25.2], [2018.44, 23.8], [2018.46, 22.4], [2018.48, 21.2], [2018.5, 20.6], [2018.52, 21.6], [2018.54, 22.7], [2018.57, 24.3], [2018.59, 24.6], [2018.62, 24.1], [2018.64, 24.3], [2018.66, 25.9], [2018.68, 28.2], [2018.7, 29.1], [2018.72, 28.3], [2018.74, 27.8], [2018.76, 25.1], [2018.77, 24.1], [2018.79, 25.9], [2018.81, 27.8], [2018.83, 29.3], [2018.85, 28.9], [2018.87, 27.7], [2018.89, 26.0], [2018.91, 25.5], [2018.94, 26.2], [2018.96, 27.0], [2018.99, 27.7], [2019.01, 27.9], [2019.03, 27.5], [2019.05, 26.4], [2019.08, 25.1], [2019.1, 22.5], [2019.12, 21.5], [2019.15, 21.2], [2019.17, 21.2], [2019.18, 21.8], [2019.21, 22.1], [2019.22, 21.6], [2019.25, 21.6], [2019.27, 22.1], [2019.29, 22.1], [2019.31, 23.0], [2019.33, 23.0], [2019.35, 23.4], [2019.37, 25.7], [2019.39, 27.3], [2019.41, 27.7], [2019.43, 28.9], [2019.45, 28.2], [2019.48, 26.2], [2019.5, 26.8], [2019.52, 25.1], [2019.54, 25.7], [2019.56, 26.2], [2019.58, 25.9], [2019.6, 25.7], [2019.62, 26.4], [2019.64, 26.9], [2019.67, 28.0], [2019.69, 28.9], [2019.71, 28.6], [2019.73, 27.4], [2019.75, 27.4], [2019.77, 28.6], [2019.79, 29.3], [2019.81, 30.9], [2019.83, 29.3], [2019.85, 27.8], [2019.87, 25.6], [2019.89, 24.3], [2019.91, 23.8], [2019.93, 23.9], [2019.95, 24.8], [2019.97, 25.4], [2019.99, 24.8], [2020.01, 27.0], [2020.03, 27.4], [2020.05, 28.2], [2020.07, 28.2], [2020.09, 28.4], [2020.12, 26.6], [2020.13, 26.5], [2020.16, 27.8], [2020.18, 29.1], [2020.2, 28.6], [2020.22, 26.9], [2020.24, 22.9], [2020.26, 19.6], [2020.28, 18.3], [2020.31, 17.9], [2020.33, 18.4], [2020.36, 18.8], [2020.38, 19.5], [2020.4, 19.7], [2020.42, 20.7], [2020.44, 20.3], [2020.46, 20.3], [2020.48, 20.6], [2020.5, 18.9], [2020.53, 19.8], [2020.55, 19.8], [2020.57, 20.3], [2020.59, 20.6], [2020.61, 19.8], [2020.63, 19.7], [2020.65, 20.5], [2020.67, 22.3], [2020.69, 23.8], [2020.72, 23.4], [2020.75, 22.0], [2020.77, 21.1], [2020.79, 20.2], [2020.81, 21.2], [2020.83, 21.6], [2020.86, 21.9], [2020.88, 22.1], [2020.9, 21.1], [2020.92, 20.5], [2020.94, 19.6], [2020.96, 19.2], [2020.98, 19.7], [2021.0, 19.5], [2021.02, 22.0], [2021.04, 22.4], [2021.07, 22.3], [2021.08, 22.8], [2021.11, 21.0], [2021.13, 21.4], [2021.15, 22.9], [2021.17, 23.4], [2021.19, 23.7], [2021.21, 23.6], [2021.23, 22.9], [2021.26, 21.8], [2021.28, 22.4], [2021.3, 23.4], [2021.32, 25.0], [2021.34, 24.7], [2021.36, 24.3], [2021.38, 25.7], [2021.42, 26.2], [2021.43, 26.4], [2021.45, 25.5], [2021.48, 24.7], [2021.5, 24.4], [2021.52, 26.4], [2021.54, 27.8], [2021.57, 29.5], [2021.59, 30.5], [2021.61, 29.3], [2021.63, 27.3], [2021.65, 28.4], [2021.67, 30.0], [2021.69, 31.8], [2021.71, 34.7], [2021.73, 33.7], [2021.75, 35.0], [2021.77, 36.1], [2021.79, 36.3], [2021.81, 35.5], [2021.83, 36.3], [2021.84, 34.6], [2021.86, 33.8], [2021.88, 33.3], [2021.9, 32.8], [2021.92, 33.0], [2021.95, 32.0], [2021.98, 30.4], [2021.99, 29.5], [2022.01, 32.0], [2022.04, 31.6], [2022.06, 32.7], [2022.08, 34.7], [2022.1, 31.8], [2022.12, 31.9], [2022.14, 32.3], [2022.16, 32.0], [2022.19, 32.0], [2022.21, 31.3], [2022.23, 29.3], [2022.25, 28.8], [2022.27, 31.0], [2022.29, 31.8], [2022.31, 34.2], [2022.33, 35.1], [2022.36, 35.1], [2022.38, 36.3], [2022.4, 37.5], [2022.42, 37.3], [2022.44, 39.1], [2022.45, 41.3], [2022.48, 40.5], [2022.5, 39.1], [2022.53, 39.2], [2022.55, 38.9], [2022.57, 41.1], [2022.59, 42.5], [2022.61, 42.3], [2022.63, 42.9], [2022.65, 45.8], [2022.67, 47.8], [2022.69, 50.5], [2022.71, 53.2], [2022.73, 52.2], [2022.74, 50.2], [2022.76, 50.5], [2022.78, 49.5], [2022.8, 49.6], [2022.82, 50.8], [2022.84, 48.7], [2022.87, 47.2], [2022.89, 47.3], [2022.91, 47.2], [2022.93, 48.7], [2022.95, 51.5], [2022.97, 50.9], [2022.99, 49.1], [2023.01, 50.5], [2023.03, 50.2], [2023.05, 51.5], [2023.08, 53.8], [2023.09, 53.3], [2023.12, 51.5], [2023.14, 50.5], [2023.16, 51.1], [2023.18, 51.3], [2023.2, 53.2], [2023.22, 51.4], [2023.24, 48.7], [2023.26, 48.3], [2023.29, 46.4], [2023.31, 51.4], [2023.33, 52.8], [2023.35, 52.6], [2023.37, 52.6], [2023.39, 51.8], [2023.41, 53.1], [2023.43, 52.2], [2023.45, 52.9], [2023.49, 50.8], [2023.5, 49.6], [2023.53, 49.9], [2023.55, 49.3], [2023.57, 50.6], [2023.58, 50.4], [2023.6, 50.9], [2023.62, 54.6], [2023.64, 57.8], [2023.66, 62.3], [2023.68, 66.0], [2023.7, 64.6], [2023.72, 59.2], [2023.74, 58.2], [2023.76, 57.4], [2023.78, 60.5], [2023.8, 64.2], [2023.82, 67.2], [2023.84, 65.4], [2023.87, 62.7], [2023.88, 60.6], [2023.9, 59.1], [2023.92, 58.3], [2023.94, 56.5], [2023.97, 54.5], [2023.99, 52.3], [2024.01, 55.1], [2024.03, 57.6], [2024.05, 60.4], [2024.07, 64.2], [2024.1, 60.9], [2024.12, 60.1], [2024.14, 59.2], [2024.16, 59.0], [2024.18, 59.5], [2024.2, 59.9], [2024.22, 57.2], [2024.24, 54.9], [2024.26, 54.6], [2024.28, 54.7], [2024.31, 55.8], [2024.33, 61.2], [2024.35, 61.4], [2024.37, 57.4], [2024.39, 54.6], [2024.41, 53.1], [2024.43, 53.6], [2024.45, 54.5], [2024.48, 55.1], [2024.5, 50.5], [2024.52, 50.1], [2024.54, 49.1], [2024.56, 49.9], [2024.58, 53.4], [2024.6, 54.9], [2024.62, 54.6], [2024.65, 53.2], [2024.68, 54.3], [2024.7, 55.0], [2024.71, 56.2], [2024.74, 56.8], [2024.76, 51.4], [2024.78, 51.4], [2024.79, 53.2], [2024.81, 52.7], [2024.83, 57.7], [2024.85, 58.5], [2024.87, 56.7], [2024.89, 54.1], [2024.91, 54.1], [2024.93, 51.8], [2024.95, 50.2], [2024.97, 49.9], [2024.99, 46.0], [2025.01, 52.4], [2025.03, 57.4], [2025.05, 59.9], [2025.07, 61.4], [2025.1, 57.3], [2025.12, 52.2], [2025.14, 50.6], [2025.16, 50.6], [2025.18, 51.5], [2025.2, 52.8], [2025.22, 54.0], [2025.24, 52.4], [2025.26, 52.8], [2025.28, 53.4], [2025.3, 49.2], [2025.32, 50.4], [2025.35, 49.9], [2025.37, 49.1], [2025.39, 52.4], [2025.4, 54.0], [2025.42, 53.6], [2025.44, 54.3], [2025.47, 55.5], [2025.49, 52.7], [2025.5, 50.9], [2025.54, 52.8], [2025.55, 52.0], [2025.58, 53.8], [2025.6, 55.5], [2025.62, 55.2], [2025.64, 56.3], [2025.66, 57.4], [2025.68, 57.8], [2025.7, 60.9], [2025.71, 62.6], [2025.74, 62.2], [2025.76, 59.7], [2025.78, 59.1], [2025.8, 59.2], [2025.81, 63.1], [2025.83, 66.4], [2025.86, 64.6], [2025.89, 62.8], [2025.9, 62.7], [2025.92, 61.4], [2025.94, 63.5], [2025.96, 61.9], [2025.98, 60.6], [2026.0, 62.0], [2026.02, 64.1], [2026.05, 64.6], [2026.07, 62.8], [2026.09, 60.4], [2026.11, 56.0], [2026.13, 54.6], [2026.16, 55.8], [2026.17, 55.9], [2026.2, 59.7], [2026.22, 64.1], [2026.24, 65.0], [2026.25, 66.8]]};
+const C = { o:'#E07F5C', ol:'#EAA992', od:'#A8411A', g:'#7BC143', g2:'#B3D88C', gd:'#5A9030', s:'#5D7082', sd:'#34495E', gr:'#BEBEBE', grd:'#969696', gy:'#D9A441', b:'#1A9FCC' };
+// MFO palette order: 1 green · 2 grey · 3 orange · then light/dark tones of each
+const PAL = ['#7BC143','#BEBEBE','#E07F5C','#B3D88C','#EAA992','#969696','#5A9030','#A8411A'];
+const F = "'Aller', sans-serif";
+const num = (v, d) => Number(v).toFixed(d).replace('.', ',');
+const tickFont = { family: F, size: 9 };
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+if (window.Chart) { Chart.defaults.font.family = F; Chart.defaults.color = '#555'; }
+
+function vline(x, color, label) { return { id:'vline', afterDatasetsDraw(ch){ const {ctx, chartArea:a, scales} = ch; const px = scales.x.getPixelForValue(x); if (px < a.left || px > a.right) return; ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke(); if (label){ ctx.setLineDash([]); ctx.fillStyle = color; ctx.font = "700 9px " + F; ctx.textAlign='right'; ctx.fillText(label, px-3, a.top+9);} ctx.restore(); } }; }
+function hline(y, color, horizontal) { return { id:'hline', afterDatasetsDraw(ch){ const {ctx, chartArea:a, scales} = ch; ctx.save(); ctx.setLineDash([4,3]); ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.beginPath(); if (horizontal){ const px = scales.x.getPixelForValue(y); ctx.moveTo(px,a.top); ctx.lineTo(px,a.bottom);} else { const py = scales.y.getPixelForValue(y); ctx.moveTo(a.left,py); ctx.lineTo(a.right,py);} ctx.stroke(); ctx.restore(); } }; }
+
+function baseOpts(extra) {
+  const o = {
+    responsive:false, maintainAspectRatio:false, animation:false,
+    devicePixelRatio:(window.devicePixelRatio||1)*1.1,
+    plugins:{ legend:{ display:false, position:'bottom', labels:{ font:{family:F,size:9.5}, boxWidth:9, boxHeight:9, color:'#666', padding:8 } },
+              datalabels:{ display:false }, tooltip:{ enabled:true } },
+    scales:{ x:{ grid:{display:false}, ticks:{font:tickFont, color:'#555'} }, y:{ grid:{color:'#eee'}, ticks:{font:tickFont, color:'#555'} } }
+  };
+  return deepMerge(o, extra || {});
+}
+function deepMerge(t, s){ for (const k in s){ if (s[k] && typeof s[k]==='object' && !Array.isArray(s[k]) && typeof t[k]==='object') deepMerge(t[k], s[k]); else t[k]=s[k]; } return t; }
+const DL = (fmt, extra) => Object.assign({ display:true, anchor:'end', align:'top', clamp:true, clip:false, color:'#666', font:{family:F,size:9,weight:'700'}, formatter:fmt }, extra||{});
+
+let auctionTenor = '30';
+const AUCTION = {
+  countries:['France','Germany','Italy','Japan','United Kingdom','United States'],
+  '10':{ p1:[5.5,4.8,6.3,3.45,5.5,4.3], p2:[7.3,5.9,12.1,1.1,5.36,5.6], p3:[5.9,5.9,8.0,2.91,9.43,5.5] },
+  '30':{ p1:[9.5,3.11,4.8,1.6,3.95,7.05], p2:[9.5,3.41,15.0,1.9,6.91,5.9], p3:[7.81,5.21,16.0,4.5,5.88,10.91] }
+};
+function setAuction(t){ auctionTenor=t; document.getElementById('auc-30').classList.toggle('active',t==='30'); document.getElementById('auc-10').classList.toggle('active',t==='10'); drawOne('c-auction'); }
+
+const FXORDER = ['HUN','COL','POL','MEX','ZAF','BRA','PER','ROU','MYS','THA','CHL','CHN','PHL','IDN','IND'];
+
+const DEFS = {
+  'c-dens': () => ({ type:'line', data:{ datasets:[
+      { label:'Baseline', data:DATA.dens_base.map(p=>({x:p[0],y:Math.max(0,p[1]+0.006)})), borderColor:C.grd, borderWidth:1.8, pointRadius:0, tension:0.2 },
+      { label:'Upside', data:DATA.dens_up.map(p=>({x:p[0],y:Math.max(0,p[1]+0.006)})), borderColor:C.g, borderWidth:1.8, pointRadius:0, tension:0.2 },
+      { label:'Downside', data:DATA.dens_down.map(p=>({x:p[0],y:Math.max(0,p[1]+0.006)})), borderColor:C.o, borderWidth:1.8, pointRadius:0, tension:0.2 },
+      { label:'5th pct.', type:'scatter', data:[{x:0.75,y:0.075},{x:2.6,y:0.196},{x:-0.5,y:0.044}], backgroundColor:[C.grd,C.g,C.o], pointRadius:4, pointStyle:'circle',
+        datalabels: DL((v,ctx)=>['0,75%','2,6%','–0,5%'][ctx.dataIndex], {align:['right','right','left'], anchor:'center', offset:5}) }
+    ]},
+    options: baseOpts({ plugins:{ legend:{display:true, labels:{filter:i=>i.text!=='5th pct.'}} }, scales:{ x:{type:'linear', min:-2, max:8, ticks:{stepSize:1, callback:v=>v+'%'}}, y:{min:0, max:0.6, ticks:{stepSize:0.2, callback:v=>num(v,1)}} } }) }),
+
+  'c-gar': () => ({ type:'line', data:{ datasets:[
+      { label:'GaR rank', data:DATA.gar.map(p=>({x:p[0],y:p[1]})), borderColor:'#1B2127', borderWidth:1.6, pointRadius:0, tension:0.15 },
+      { label:'Scenarios', type:'scatter', data:[{x:2026.17,y:37.7},{x:2026.17,y:72},{x:2026.17,y:14.6}], backgroundColor:['#1B2127',C.g,C.o], pointRadius:4,
+        datalabels: DL((v,ctx)=>['Base','Up','Down'][ctx.dataIndex], {anchor:'center', align:'left', offset:6}) }
+    ]},
+    plugins:[{ id:'bands', beforeDatasetsDraw(ch){ const {ctx, chartArea:a, scales:{y}} = ch; const cols=['rgba(170,31,46,.22)','rgba(205,135,121,.20)','rgba(209,211,212,.30)','rgba(153,170,133,.25)','rgba(73,118,55,.22)']; for (let i=0;i<5;i++){ const y0=y.getPixelForValue(i*20), y1=y.getPixelForValue((i+1)*20); ctx.fillStyle=cols[i]; ctx.fillRect(a.left, y0, a.right-a.left, y1-y0);} } }],
+    options: baseOpts({ scales:{ x:{type:'linear', min:2012, max:2026.5, ticks:{stepSize:2, callback:v=>Number.isInteger(v)?String(v):''}}, y:{min:0, max:100, reverse:true, ticks:{stepSize:20}} } }) }),
+
+  'c-fci': () => ({ type:'line', data:{ datasets:[
+      { label:'Global FCI', data:DATA.fci.map(p=>({x:p[0],y:p[1]})), borderColor:C.s, borderWidth:1.6, pointRadius:0, tension:0.15, fill:{target:{value:0}, above:'rgba(224,127,92,.18)', below:'rgba(123,193,67,.18)'} },
+      { label:'Scenarios', type:'scatter', data:[{x:2026.3,y:0.0},{x:2026.3,y:-2.04}], backgroundColor:[C.o,C.g], pointRadius:4,
+        datalabels: DL((v,ctx)=>['Downside','Upside'][ctx.dataIndex], {anchor:'center', align:'right', offset:6}) }
+    ]},
+    options: baseOpts({ layout:{padding:{right:60}}, scales:{ x:{type:'linear', min:2015, max:2026.5, afterBuildTicks:ax=>{ax.ticks=[2015,2017,2019,2021,2023,2025].map(v=>({value:v}));}, ticks:{maxRotation:0, callback:v=>String(v)}}, y:{min:-2.2, max:2, ticks:{stepSize:1, callback:v=>num(v,0)}} } }) }),
+
+  'c-eq': () => { const cols = {'World':PAL[0],'United States':PAL[1],'Europe':PAL[2],'Japan':PAL[3],'Emerging markets':PAL[4],'China':PAL[5],'Asia ex. Japan':PAL[6]};
+    const d0 = new Date(2025,9,14);
+    return { type:'line', data:{ datasets:Object.keys(cols).map(k=>({ label:k, data:DATA.eq[k].map(p=>({x:p[0],y:p[1]})), borderColor:cols[k], borderWidth:k==='World'?2:1.3, borderDash:k==='World'?[5,3]:[], pointRadius:0, tension:0.1 })) },
+      plugins:[vline(136,'#888','War'), hline(100,'#bbb')],
+      options: baseOpts({ plugins:{legend:{display:true, labels:{boxWidth:8, boxHeight:8, padding:5, font:{family:F,size:8.5}}}}, scales:{ x:{type:'linear', min:0, max:170, ticks:{stepSize:45, callback:v=>{const d=new Date(d0); d.setDate(d.getDate()+v); return MON[d.getMonth()]+" '"+String(d.getFullYear()).slice(2);}}}, y:{min:90, max:130, ticks:{stepSize:10}} } }) }; },
+
+  'c-hhi': () => ({ type:'bar', data:{ labels:['Korea','United States','Germany','United Kingdom','Japan','France'], datasets:[{ data:[99.7,97.7,93.5,78.8,72.7,55.9], backgroundColor:PAL[0], borderRadius:3, maxBarThickness:16,
+      datalabels: DL(v=>num(v,1), {anchor:'end', align:'right'}) }] },
+    plugins:[hline(95,C.s,true)],
+    options: baseOpts({ indexAxis:'y', layout:{padding:{right:30}}, scales:{ x:{min:0,max:100,grid:{color:'#eee'},ticks:{stepSize:25}}, y:{grid:{display:false}, ticks:{font:{family:F,size:10,weight:'700'}}} } }) }),
+
+  'c-pe': () => ({ type:'bar', data:{ labels:['Actual fwd P/E','Model fair value'], datasets:[{ data:[96,81], backgroundColor:[PAL[0],PAL[1]], borderRadius:3, maxBarThickness:38, datalabels: DL(v=>v+'th') }] },
+    options: baseOpts({ layout:{padding:{top:16}}, scales:{ y:{min:0,max:100,ticks:{stepSize:25}}, x:{ticks:{font:{family:F,size:10,weight:'700'}}} } }) }),
+
+  'c-auction': () => { const A = AUCTION[auctionTenor]; return { type:'bar', data:{ labels:AUCTION.countries, datasets:[
+      { label:'2015–19', data:A.p1, backgroundColor:PAL[0], borderRadius:2, maxBarThickness:16 },
+      { label:'2020–22', data:A.p2, backgroundColor:PAL[1], borderRadius:2, maxBarThickness:16 },
+      { label:'2023–now', data:A.p3, backgroundColor:PAL[2], borderRadius:2, maxBarThickness:16, datalabels: DL(v=>num(v,0)) } ] },
+    options: baseOpts({ layout:{padding:{top:14}}, plugins:{legend:{display:true}}, scales:{ y:{min:0,max:18,ticks:{stepSize:3}}, x:{ticks:{font:{family:F,size:10,weight:'700'}}} } }) }; },
+
+  'c-bear': () => ({ type:'bar', data:{ labels:['2009–20','Post-2020'], datasets:[{ data:[-9,-17], backgroundColor:[PAL[0],PAL[1]], borderRadius:3, maxBarThickness:38, datalabels: DL(v=>'~'+num(v,0)+'%', {anchor:'start', align:'bottom'}) }] },
+    options: baseOpts({ layout:{padding:{bottom:4}}, scales:{ y:{min:-20,max:0,ticks:{stepSize:5}}, x:{position:'top', ticks:{font:{family:F,size:10,weight:'700'}}} } }) }),
+
+  'c-rv': () => { const yrs=[2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024]; const L=yrs.map(String).concat(['Latest']);
+    const top = k => yrs.map(y=>DATA.rv[k][y]).concat([DATA.rv[k].last]);
+    const cf=top('Cash-futures basis'), sw=top('Swap spread trade'), ot=top('Other arbitrage');
+    const pos = a => a.map(v=>Math.max(0,v));
+    const cfv=pos(cf), swv=sw.map((v,i)=>Math.max(0,v-cfv[i])), otv=ot.map((v,i)=>Math.max(0,v-sw[i]));
+    return { type:'bar', data:{ labels:L, datasets:[
+      { label:'Cash-futures basis', data:cfv.map(v=>+v.toFixed(2)), backgroundColor:PAL[0], stack:'s' },
+      { label:'Swap spread', data:swv.map(v=>+v.toFixed(2)), backgroundColor:PAL[1], stack:'s' },
+      { label:'Other arbitrage', data:otv.map(v=>+v.toFixed(2)), backgroundColor:PAL[2], stack:'s',
+        datalabels: DL((v,ctx)=> ctx.dataIndex===L.length-1 ? '$'+num(ot[ctx.dataIndex],1)+' tn' : '') } ] },
+    options: baseOpts({ layout:{padding:{top:14}}, plugins:{legend:{display:true}}, scales:{ x:{stacked:true, ticks:{maxRotation:0, autoSkip:true, callback:function(v,i){ const l=this.getLabelForValue(v); return l==='Latest'?'Latest':(i%2===0?"'"+l.slice(2):''); }}}, y:{stacked:true, min:0, max:2.5, ticks:{stepSize:0.5, callback:v=>num(v,1)}} } }) }; },
+
+  'c-borrow': () => { const yrs=[2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024]; const L=yrs.map(String).concat(['Latest']);
+    const keys=['Multistrategy','Relative value','Macro','Equity','Other']; const cols=PAL.slice(0,5);
+    const tops = keys.map(k=>yrs.map(y=>DATA.borrow[k][y]).concat([DATA.borrow[k].last]));
+    const ds = keys.map((k,i)=>({ label:k, data:tops[i].map((v,j)=>+(i===0?v:v-tops[i-1][j]).toFixed(2)), backgroundColor:cols[i], stack:'s',
+       datalabels: i===4 ? DL((v,ctx)=> ctx.dataIndex===L.length-1 ? '$'+num(tops[4][ctx.dataIndex],1)+' tn' : '') : {display:false} }));
+    return { type:'bar', data:{ labels:L, datasets:ds },
+    options: baseOpts({ layout:{padding:{top:14}}, plugins:{legend:{display:true}}, scales:{ x:{stacked:true, ticks:{maxRotation:0, callback:function(v,i){ const l=this.getLabelForValue(v); return l==='Latest'?'Latest':(i%2===0?"'"+l.slice(2):''); }}}, y:{stacked:true, min:0, max:8, ticks:{stepSize:2}} } }) }; },
+
+  'c-top10': () => ({ type:'line', data:{ datasets:[{ label:'Top-10 share', data:DATA.top10.map(p=>({x:p[0],y:p[1]})), borderColor:PAL[0], backgroundColor:'rgba(123,193,67,.12)', fill:'origin', borderWidth:1.6, pointRadius:0, tension:0.15 }] },
+    options: baseOpts({ scales:{ x:{type:'linear',min:2013,max:2025.6,afterBuildTicks:ax=>{ax.ticks=[2013,2015,2017,2019,2021,2023,2025].map(v=>({value:v}));},ticks:{callback:v=>String(v)}}, y:{min:0,max:40,ticks:{stepSize:10,callback:v=>v+'%'}} } }) }),
+
+  'c-opt': () => ({ type:'line', data:{ datasets:[{ label:'Option/cash ratio', data:DATA.optline.map(p=>({x:p[0],y:p[1]})), borderColor:PAL[0], borderWidth:1, pointRadius:0, tension:0 }] },
+    options: baseOpts({ scales:{ x:{type:'linear',min:DATA.optline[0][0],max:DATA.optline[DATA.optline.length-1][0],afterBuildTicks:ax=>{ax.ticks=[2015,2017,2019,2021,2023,2025].map(v=>({value:v}));},ticks:{callback:v=>String(v)}}, y:{min:0,max:80,ticks:{stepSize:20,callback:v=>v+'%'}} } }) }),
+
+  'c-garhist': () => ({ type:'bar', data:{ labels:["Oct '23","Apr '24","Oct '24","Apr '25","Oct '25","Apr '26"], datasets:[{ data:[1.0,0.7,1.2,0.4,0.5,0.75],
+      backgroundColor:[PAL[1],PAL[0],PAL[1],PAL[0],PAL[1],PAL[0]], borderRadius:3, maxBarThickness:30,
+      datalabels: DL(v=>num(v, v===0.75?2:1)+'%') }] },
+    options: baseOpts({ layout:{padding:{top:14}}, scales:{ y:{min:0,max:1.5,ticks:{stepSize:0.5,callback:v=>num(v,1)+'%'}}, x:{ticks:{font:{family:F,size:10,weight:'700'}}} } }) }),
+
+  'c-def': () => { const cols={'DL selective':PAL[0],'DL payment':PAL[1],'HY selective':PAL[2]}; const lbl={'DL selective':'DL selective','DL payment':'DL payment','HY selective':'HY selective'};
+    const tx = s => { const [y,m]=s.split('-').map(Number); return y+(m-1)/12; };
+    const allx = Object.keys(cols).flatMap(k=>DATA['def_'+k].map(p=>tx(p[0]))); const xMin=Math.min(...allx), xMax=Math.max(...allx);
+    return { type:'line', data:{ datasets:Object.keys(cols).map(k=>({ label:lbl[k], data:DATA['def_'+k].map(p=>({x:tx(p[0]),y:p[1]})), borderColor:cols[k], borderWidth:1.6, pointRadius:0, tension:0.15 })) },
+      options: baseOpts({ plugins:{legend:{display:true}}, scales:{ x:{type:'linear',min:xMin,max:xMax,afterBuildTicks:ax=>{ax.ticks=[];for(let y=2018;y<=2026;y++){ax.ticks.push({value:y});}},ticks:{callback:v=>"'"+String(v).slice(2)}}, y:{min:0,max:10,ticks:{stepSize:2,callback:v=>v+'%'}} } }) }; },
+
+  'c-red': () => { const L=['22Q3','22Q4','23Q1','23Q2','23Q3','23Q4','24Q1','24Q2','24Q3','24Q4','25Q1','25Q2','25Q3','25Q4'];
+    return { type:'bar', data:{ labels:L, datasets:[
+      { label:'Redemptions', data:DATA.bdc_red, backgroundColor:PAL[0], borderRadius:2, maxBarThickness:14, order:2,
+        datalabels: DL((v,ctx)=> ctx.dataIndex===13 ? num(v,1)+'%' : '') },
+      { label:'Subscriptions', type:'line', data:DATA.bdc_sub, borderColor:PAL[1], borderWidth:1.6, pointRadius:0, tension:0.2, order:1 } ] },
+    plugins:[hline(5,C.s)],
+    options: baseOpts({ plugins:{legend:{display:true}}, scales:{ x:{ticks:{callback:function(v,i){return i%2===0?this.getLabelForValue(v):'';}}}, y:{min:0,max:16,ticks:{stepSize:4,callback:v=>v+'%'}} } }) }; },
+
+  'c-bdc': () => ({ type:'bar', data:{ labels:['BDC1','BDC2','BDC3','BDC4','BDC5'], datasets:[
+      { label:'Redemptions capped at 5%', data:[11,11,10,10,9], backgroundColor:PAL[0], borderRadius:2, maxBarThickness:30, order:2, datalabels: DL(v=>v+'q') },
+      { label:'Moderate shock', type:'line', data:[5,7,6,7,5], showLine:false, pointStyle:'line', pointRadius:14, pointBorderWidth:3, borderColor:PAL[1], backgroundColor:PAL[1], order:1,
+        datalabels: DL(v=>v+'q', {color:'#AA1F2E', align:'bottom', anchor:'center', offset:4}) } ] },
+    options: baseOpts({ layout:{padding:{top:14}}, plugins:{legend:{display:true}}, scales:{ y:{min:0,max:12,ticks:{stepSize:2}} } }) }),
+
+  'c-fx': () => { const fx=DATA.fx; const dol=FXORDER.map(k=>fx[k].dollar), car=FXORDER.map(k=>fx[k].carry>fx[k].dollar && fx[k].carry>0 ? +(fx[k].carry-fx[k].dollar).toFixed(1) : fx[k].carry);
+    return { type:'bar', data:{ labels:FXORDER, datasets:[
+      { label:'Dollar factor', data:dol, backgroundColor:PAL[0], stack:'s', order:3 },
+      { label:'Carry & idiosyncratic', data:car, backgroundColor:PAL[1], stack:'s', order:3 },
+      { label:'FX change 2025:Q1 → war', type:'line', stack:'pb', data:FXORDER.map(k=>fx[k].before), showLine:false, pointStyle:'circle', pointRadius:4, pointBackgroundColor:'#fff', pointBorderColor:PAL[5], pointBorderWidth:1.5, borderColor:PAL[5], order:1 },
+      { label:'FX change since war', type:'line', stack:'ps', data:FXORDER.map(k=>fx[k].since), showLine:false, pointStyle:'line', pointRadius:9, pointBorderWidth:3, borderColor:C.o, backgroundColor:C.o, order:1,
+        datalabels: DL((v,ctx)=> FXORDER[ctx.dataIndex]==='CHL'||FXORDER[ctx.dataIndex]==='HUN' ? num(v,1) : '', {anchor:'center', align:'bottom', offset:4, color:C.o}) } ] },
+    plugins:[{ id:'chlbg', beforeDatasetsDraw(ch){ const {ctx, chartArea:a, scales:{x}} = ch; const i=FXORDER.indexOf('CHL'); const w=(x.getPixelForValue(1)-x.getPixelForValue(0)); ctx.save(); ctx.fillStyle='rgba(190,190,190,.18)'; ctx.fillRect(x.getPixelForValue(i)-w/2, a.top, w, a.bottom-a.top); ctx.restore(); } }],
+    options: baseOpts({ plugins:{legend:{display:true}}, scales:{ x:{stacked:true, ticks:{font:{family:F,size:9.5,weight:'700'}}}, y:{stacked:true,min:-10,max:20,ticks:{stepSize:5}} } }) }; },
+
+  'c-es4': () => ({ type:'bar', data:{ labels:[['All NBFI'],['Hedge','funds'],['Mutual','funds'],['Insurers'],['Pension','funds']], datasets:[{ data:[-0.64,-1.31,-0.60,0.30,-0.54],
+      backgroundColor:[PAL[0],PAL[0],PAL[0],'#E1F1D3','#E1F1D3'], borderColor:[PAL[0],PAL[0],PAL[0],PAL[3],PAL[3]], borderWidth:1, borderRadius:2, maxBarThickness:30,
+      datalabels: DL(v=>num(v,1), {anchor:ctx=>ctx.dataset.data[ctx.dataIndex]<0?'start':'end', align:ctx=>ctx.dataset.data[ctx.dataIndex]<0?'bottom':'top'}) }] },
+    options: baseOpts({ layout:{padding:{top:12,bottom:4}}, scales:{ y:{min:-1.6,max:0.4,ticks:{stepSize:0.4,callback:v=>num(v,1)}}, x:{position:'top', ticks:{font:{family:F,size:9,weight:'700'}}} } }) }),
+
+  'c-nexus': () => ({ type:'line', data:{ datasets:[
+      { label:'CCC/unrated, 75th pct.', data:DATA.nexus.ccc75.map(p=>({x:p[0],y:p[1]})), borderColor:PAL[0], borderWidth:1.6, pointRadius:0 },
+      { label:'All EMs, 75th pct.', data:DATA.nexus.em75.map(p=>({x:p[0],y:p[1]})), borderColor:PAL[1], borderWidth:1.6, pointRadius:0 },
+      { label:'All EMs, median', data:DATA.nexus.med.map(p=>({x:p[0],y:p[1]})), borderColor:PAL[2], borderWidth:1.6, pointRadius:0 } ] },
+    options: baseOpts({ plugins:{legend:{display:true}}, scales:{ x:{type:'linear',min:2020,max:2025,ticks:{stepSize:1,callback:v=>Number.isInteger(v)?String(v):''}}, y:{min:0,max:25,ticks:{stepSize:5,callback:v=>v+'%'}} } }) }),
+
+  'c-cet1': () => { const steps=[['Start',13.0,'t'],['Loan loss',-4.8],['NII',11.5],['Fees',1.8],['Valuation',0.5],['Expenses',-6.8],['Liquidity',-0.1],['Tax',-0.7],['Dividends',-1.7],['RWA',-0.5],['End',12.3,'t']];
+    let run=0; const data=[], cols=[];
+    steps.forEach(s=>{ if (s[2]==='t'){ data.push([0,s[1]]); cols.push(PAL[1]); run=s[1]; } else { data.push([run, run+s[1]]); cols.push(s[1]>=0?C.g:C.o); run+=s[1]; } });
+    return { type:'bar', data:{ labels:steps.map(s=>s[0]), datasets:[{ data, backgroundColor:cols, borderRadius:1, maxBarThickness:22,
+      datalabels: DL((v,ctx)=>{ const s=steps[ctx.dataIndex]; return (s[2]==='t'?'':(s[1]>0?'+':''))+num(s[1],1); }, {anchor:'end', align:'top', font:{family:F,size:8.5,weight:'700'}}) }] },
+    options: baseOpts({ layout:{padding:{top:12}}, scales:{ x:{ticks:{font:{family:F,size:8},maxRotation:60,minRotation:60}}, y:{min:0,max:30,ticks:{stepSize:10}} } }) }; },
+
+  'c-weak': () => ({ type:'bar', data:{ labels:['Global','AEs','EMs','EMs ex. China'], datasets:[
+      { label:'CET1 < 7% (+G-SIB buffer)', data:[18.3,19.6,16.3,3.6], backgroundColor:PAL[0], borderRadius:2, maxBarThickness:22, datalabels: DL(v=>num(v,0)+'%') },
+      { label:'… or CET1 falls ≥5pp', data:[24.7,29.9,16.4,4.4], backgroundColor:PAL[1], borderRadius:2, maxBarThickness:22, datalabels: DL(v=>num(v,0)+'%') } ] },
+    options: baseOpts({ layout:{padding:{top:14}}, plugins:{legend:{display:true}}, scales:{ y:{min:0,max:40,ticks:{stepSize:10,callback:v=>v+'%'}}, x:{ticks:{font:{family:F,size:10,weight:'700'}}} } }) })
+};
+
+const NOLABEL = new Set(['c-auction','c-rv','c-borrow','c-red','c-bdc','c-fx','c-es4','c-weak']);
+let chartObjs = {};
+function drawOne(id) {
+  const canvas = document.getElementById(id); if (!canvas || !DEFS[id]) return;
+  if (chartObjs[id]) chartObjs[id].destroy();
+  const cont = canvas.parentElement;
+  canvas.width = Math.max(1, cont.clientWidth); canvas.height = Math.max(1, cont.clientHeight || 190);
+  const cfg = DEFS[id]();
+  if (NOLABEL.has(id)) cfg.data.datasets.forEach(d => { d.datalabels = { display:false }; });
+  cfg.plugins = [ChartDataLabels].concat(cfg.plugins || []);
+  chartObjs[id] = new Chart(canvas, cfg);
+}
+function renderCharts() { Object.keys(DEFS).forEach(id => { const c = document.getElementById(id); if (c && c.offsetParent !== null) drawOne(id); }); }
+
+// Manual modal
+function openManual() { document.getElementById('manual-modal').classList.add('open'); }
+function closeManual() { document.getElementById('manual-modal').classList.remove('open'); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeManual();
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('flow-step')) { e.preventDefault(); e.target.click(); }
+});
+
+// Re-fit charts on resize (responsive is off, as in the WEO tracker)
+(function(){
+  let t;
+  window.addEventListener('resize', () => {
+    const p = document.getElementById('panel-charts');
+    if (!p || !p.classList.contains('active')) return;
+    clearTimeout(t); t = setTimeout(renderCharts, 150);
+  });
+})();
+</script>
+</body>
+</html>
